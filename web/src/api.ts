@@ -19,7 +19,7 @@ export class ApiError extends Error { constructor(public status: number, message
 
 export async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
   const isForm = options.body instanceof FormData;
-  const response = await fetch(url, { ...options, credentials: 'include', headers: { ...(isForm ? {} : { 'Content-Type': 'application/json' }), ...options.headers } });
+  const response = await fetch(url, { ...options, signal:options.signal||AbortSignal.timeout(isForm?120000:20000), credentials: 'include', headers: { ...(isForm ? {} : { 'Content-Type': 'application/json' }), ...options.headers } });
   observeApiBuild(response);
   if (!response.ok) { let message = 'Não foi possível concluir a operação.'; let payload:Record<string,unknown>|undefined; try { payload = await response.json(); if(payload) message = String(payload.error || payload.message || message); } catch {} throw new ApiError(response.status, message, payload); }
   if (response.status === 204) return undefined as T;
