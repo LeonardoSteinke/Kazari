@@ -354,6 +354,8 @@ app.get('/api/items', auth, (req, res) => {
  else if (categoryId) { terms.push('EXISTS(SELECT 1 FROM item_categories ic WHERE ic.item_id=i.id AND ic.category_id=?)'); params.push(categoryId); }
  const tagId = parseId(req.query.tagId); if (tagId) { terms.push('EXISTS(SELECT 1 FROM item_tags it WHERE it.item_id=i.id AND it.tag_id=?)'); params.push(tagId); }
  const locationId = parseId(req.query.locationId); if (locationId) { terms.push('i.location_id=?'); params.push(locationId); }
+ if(req.query.favorite==='1')terms.push("json_extract(i.inventory,'$.favorite')=1");
+ if(['guardado','emprestado','vendido','descartado'].includes(req.query.status)){terms.push("COALESCE(json_extract(i.inventory,'$.status'),'guardado')=?");params.push(req.query.status);}
  const limit=req.query.limit===undefined?500:Math.min(100,Math.max(12,Number(req.query.limit)||48));let cursor;
  if(req.query.cursor){try{cursor=JSON.parse(Buffer.from(String(req.query.cursor),'base64url').toString('utf8'));}catch{return fail(res,'Cursor inválido.');}}
  if(cursor?.updatedAt&&Number.isInteger(cursor.id)){terms.push('(i.updated_at < ? OR (i.updated_at = ? AND i.id < ?))');params.push(cursor.updatedAt,cursor.updatedAt,cursor.id);}
@@ -363,6 +365,21 @@ app.get('/api/items', auth, (req, res) => {
  if(req.query.limit===undefined)return res.json(getItemPage(visible));
  res.json({items:getItemPage(visible),nextCursor});
 });
+app.get('/api/spaces/:id/reminders',auth,(req,res)=>{
+ const sid=parseId(req.params.id);if(!sid||!canAccessSpace(sid,req.user.id))return fail(res,'Espaço não encontrado.',404);
+ const rows=db.prepare(`SELECT id,title,inventory FROM items WHERE space_id=? AND deleted_at IS NULL AND (json_extract(inventory,'$.dueDate') IS NOT NULL OR json_extract(inventory,'$.warrantyDate') IS NOT NULL)`).all(sid);
+ const today=new Date();const end=new Date(today.getTime()+30*86400000).toISOString().slice(0,10);const reminders=[];
+ for(const row of rows){const data=JSON.parse(row.inventory);for(const [key,label] of [['dueDate','Devolução'],['warrantyDate','Garantia']])if(data[key]&&data[key]<=end&&(key!=='dueDate'||data.status==='emprestado'))reminders.push({id:row.id,title:row.title,date:data[key],label});}
+ reminders.sort((a,b)=>a.date.localeCompare(b.date));res.json(reminders);
+});
+app.post('/api/spaces/:id/search-image',auth,upload.single('image'),asyncHandler(async(req,res)=>{
+ const sid=parseId(req.params.id);if(!sid||!canAccessSpace(sid,req.user.id))return fail(res,'Espaço não encontrado.',404);if(!req.file)return fail(res,'Selecione uma imagem.');
+ const signature=async buffer=>sharp(buffer,{limitInputPixels:40000000}).rotate().resize(16,16,{fit:'fill'}).removeAlpha().toColourspace('srgb').raw().toBuffer();
+ let sample;try{sample=await signature(req.file.buffer);}catch{return fail(res,'Não foi possível processar essa imagem.');}
+ const rows=db.prepare('SELECT id,image_id AS imageId,image_format AS imageFormat FROM items WHERE space_id=? AND deleted_at IS NULL AND image_id IS NOT NULL LIMIT 500').all(sid);const results=[];
+ for(const row of rows){try{const file=await fs.readFile(path.join(DATA_DIR,'media',`${row.imageId}-thumb.webp`));const candidate=await signature(file);let distance=0;for(let index=0;index<sample.length;index++)distance+=Math.abs(sample[index]-candidate[index]);results.push({id:row.id,distance});}catch{}}
+ results.sort((a,b)=>a.distance-b.distance);res.json(results.slice(0,12).map(row=>getItem(row.id)));
+}));
 app.get('/api/items/:id',auth,(req,res)=>{
  const item=getItem(req.params.id);if(!item)return fail(res,'Item não encontrado.',404);
  if(!canAccessSpace(item.spaceId,req.user.id))return fail(res,'Item não encontrado.',404);

@@ -23,7 +23,7 @@ export async function cachedSpaces(userId: number) { return (await dbPromise).ge
 export async function cacheMeta(userId:number,spaceId:number,meta:Record<string,unknown>) { const db=await dbPromise; const key=snapshotKey(userId,spaceId); const old=await db.get('snapshots',key); await db.put('snapshots',{key,items:old?.items||[],at:new Date().toISOString(),meta}); }
 export async function cachedMeta(userId:number,spaceId:number) { return (await (await dbPromise).get('snapshots',snapshotKey(userId,spaceId)))?.meta || null; }
 export async function cacheItems(userId:number,spaceId:number,items:Item[]) {
-  const db=await dbPromise; const key=snapshotKey(userId,spaceId); const old=await db.get('snapshots',key); const visible=items.slice(0,80);
+  const db=await dbPromise; const key=snapshotKey(userId,spaceId); const old=await db.get('snapshots',key); const queue=(await db.getAllFromIndex('outbox','by-user',userId)).filter(op=>op.spaceId===spaceId);const removed=new Set(queue.filter(op=>op.kind==='delete').map(op=>String(op.localId)));const pending=(old?.items||[]).filter(item=>item.pending&&!removed.has(String(item.id)));const pendingIds=new Set(pending.map(item=>String(item.id)));const visible=[...pending,...items.filter(item=>!removed.has(String(item.id))&&!pendingIds.has(String(item.id)))].slice(0,Math.max(80,pending.length));
   for(const item of visible) if(item.thumbnailUrl && !item.pendingImage) {
     try { const response=await fetch(item.thumbnailUrl,{credentials:'include'}); observeApiBuild(response); if(response.ok) await db.put('thumbs',await response.blob(),`${userId}:${item.id}`); } catch {}
   }
