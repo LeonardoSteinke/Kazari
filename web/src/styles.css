@@ -265,6 +265,13 @@ h1, h2, p { margin-top: 0; }
 .account-password { padding-top: 16px; border-top: 1px solid var(--line); }
 .account-password h3 { margin: 0; font-size: 17px; }
 .account-success { color: #627244; font-size: 13px; }
+.avatar-crop-modal { display: flex; flex-direction: column; align-items: center; }
+.avatar-crop-modal > .modal-head, .avatar-crop-modal > .small-muted, .avatar-crop-modal > .modal-actions { width: 100%; }
+.avatar-crop-viewport { position: relative; width: min(280px, calc(100vw - 48px)); aspect-ratio: 1; flex: 0 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: 50%; background: #e3d8c3; touch-action: none; cursor: grab; }
+.avatar-crop-viewport:active { cursor: grabbing; }
+.avatar-crop-viewport img { position: absolute; top: 50%; left: 50%; max-width: none; user-select: none; pointer-events: none; }
+.avatar-zoom { display: grid; width: min(280px, 100%); gap: 6px; margin: 14px 0 10px; color: var(--muted); font-size: 13px; }
+.avatar-zoom input { width: 100%; accent-color: var(--shu); }
 
 .trash-list { display: grid; gap: 10px; }
 .trash-row { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
