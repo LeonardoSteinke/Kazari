@@ -11,8 +11,11 @@ categorias hierárquicas, tags, campos personalizados e localização física.
   convite explícito do proprietário.
 - Compartilhamento de espaço por nome de usuário com papéis de editor ou leitor;
   somente o proprietário pode convidar/remover contas e renomear o espaço.
-- Itens com descrição, múltiplas categorias, tags, localização, campos
-  configuráveis e link externo para compra.
+- Itens com descrição, múltiplas categorias, tags, localização, favoritos e campos
+  configuráveis. Os antigos campos de situação, compra, garantia e loja foram
+  retirados da interface; valores legados permanecem preservados no banco.
+- Seletores de texto e ícones sobrepostos ao conteúdo, com 22 desenhos SVG.
+  O catálogo compartilhado de nomes e chaves está em `server/icons.json`.
 - Busca por nome, descrição, tags e campos; filtros por categoria (com opção de
   incluir descendentes), tag e localização.
 - Uma imagem por item. Modo otimizado converte para WebP e gera miniatura. Modo

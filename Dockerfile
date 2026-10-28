@@ -3,6 +3,7 @@ WORKDIR /web
 COPY web/package*.json ./
 RUN npm ci
 COPY web/ ./
+COPY server/icons.json /server/icons.json
 RUN npm run build
 
 FROM node:20-slim AS runtime

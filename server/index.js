@@ -200,7 +200,7 @@ app.delete('/api/spaces/:id/members/:userId',auth,(req,res)=>{
  res.json({ok:true});
 });
 function treeRoutes(table, noun) {
- const icons=['none','banheiro','cozinha','decoracao','eletros','escritorio','louca','moveis','quarto','sala','utensilios'];
+ const icons=['none',...Object.keys(JSON.parse(readFileSync(new URL('./icons.json',import.meta.url),'utf8')))];
  app.get(`/api/${noun}`, auth, (req, res) => {
    const sid = parseId(req.query.spaceId); if (!sid) return fail(res, 'spaceId obrigatório.');
    if (!canAccessSpace(sid,req.user.id)) return fail(res, 'Espaço não encontrado.', 404);
@@ -401,7 +401,7 @@ app.get('/api/spaces/:id/export',auth,(req,res)=>{
  res.set('Cache-Control','no-store');
  if(req.query.format==='csv'){
   const cell=value=>{let text=String(value??'');if(/^[\s]*[=+@-]/.test(text))text="'"+text;return `"${text.replace(/"/g,'""')}"`;};
-  const columns=['Nome','Descrição','Categorias','Tags','Localização','Link de compra'];const lines=[columns.map(cell).join(',')];for(const item of items)lines.push([item.title,item.description,item.categories.map(c=>c.name).join('; '),item.tags.map(t=>t.name).join('; '),item.location?.name,item.purchaseUrl].map(cell).join(','));
+  const columns=['Nome','Descrição','Categorias','Tags','Localização'];const lines=[columns.map(cell).join(',')];for(const item of items)lines.push([item.title,item.description,item.categories.map(c=>c.name).join('; '),item.tags.map(t=>t.name).join('; '),item.location?.name].map(cell).join(','));
   res.type('text/csv; charset=utf-8').set('Content-Disposition','attachment; filename="kazari-inventario.csv"');return res.send('\ufeff'+lines.join('\r\n'));
  }
  res.set('Content-Disposition','attachment; filename="kazari-inventario.json"').json(data);

@@ -43,6 +43,14 @@ img, svg { max-width: 100%; }
 .kazari-select { position: relative; width: 100%; min-width: 0; max-width: 100%; }
 .select-trigger { display: flex; width: 100%; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fffdf8; text-align: left; font-size: 16px; }
 .select-trigger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select-value { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; }
+.select-value > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select-value .category-symbol { width: 24px; height: 24px; flex: 0 0 24px; }
+.select-chevron { display: block; flex: 0 0 8px; width: 8px; height: 8px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+.select-trigger { min-height: 46px; line-height: 1.5; }
+.select-icon-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+.select-icon-grid button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px 3px; text-align: center; font-size: 11px; }
+.select-icon-grid .category-symbol { width: 30px; height: 30px; }
 .select-options { display: grid; width: 100%; max-height: 240px; overflow-y: auto; overflow-x: hidden; margin-top: 6px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overscroll-behavior: contain; }
 .select-options button { display: flex; min-width: 0; width: 100%; justify-content: space-between; gap: 10px; padding: 10px; border: 0; border-radius: 6px; background: transparent; text-align: left; font-size: 16px; overflow-wrap: anywhere; }
 .select-options button[aria-selected='true'] { background: #f3ded8; color: #9e3526; }
