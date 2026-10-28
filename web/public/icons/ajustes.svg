@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Ajustes</title>
+<path d="M16 28 H24" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M44 28 H84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="34" cy="28" r="6" fill="none" stroke="#C8452D" stroke-width="4"/>
+<path d="M16 50 H54" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M74 50 H84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="64" cy="50" r="6" fill="#C8452D"/>
+<path d="M16 72 H30" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M50 72 H84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="40" cy="72" r="6" fill="none" stroke="#C8452D" stroke-width="4"/>
+</svg>

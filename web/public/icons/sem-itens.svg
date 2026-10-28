@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Sem itens</title>
+<path d="M22 50 V80 a4 4 0 0 0 4 4 H74 a4 4 0 0 0 4 -4 V50" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M16 50 H84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linecap="round"/>
+<path d="M22 50 L14 36 H36 L40 50" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M78 50 L86 36 H64 L60 50" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="50" y1="8" x2="50" y2="22" stroke="#2B2926" stroke-width="2" stroke-linecap="round"/>
+<circle cx="50" cy="30" r="8" fill="#C8452D"/>
+<line x1="34" y1="68" x2="66" y2="68" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 6"/>
+</svg>
