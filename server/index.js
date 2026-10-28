@@ -50,7 +50,7 @@ function auth(req, res, next) {
  } catch { res.clearCookie('kazari_session', { path: '/' }); res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' }); }
 }
 function admin(req, res, next) { if (!req.user?.admin) return res.status(403).json({ error: 'Apenas a conta master pode fazer isso.' }); next(); }
-const userView = (u) => ({ id: u.id, username: u.username, isAdmin: !!u.is_admin, disabled: !!u.disabled_at });
+const userView = (u) => ({ id: u.id, username: u.username, displayName:u.display_name||'', avatarUrl:u.avatar_version?`/api/account/avatar?v=${u.avatar_version}`:null, isAdmin: !!u.is_admin, disabled: !!u.disabled_at });
 const parseId = (v) => Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null;
 function fail(res, message, status = 400) { return res.status(status).json({ error: message }); }
 const registerLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, handler: (_req, res) => fail(res, 'Muitas tentativas de cadastro. Aguarde 15 minutos e tente novamente.', 429) });
@@ -87,7 +87,20 @@ app.post('/api/auth/login', loginLimiter, asyncHandler(async (req, res) => {
  res.cookie('kazari_session', jwt.sign(user, SECRET, { expiresIn: '30d' }), tokenCookie(req)); res.json({ user: userView(row) });
 }));
 app.post('/api/auth/logout', (_req, res) => { res.clearCookie('kazari_session', { path: '/' }); res.json({ ok: true }); });
-app.get('/api/auth/me', auth, (req, res) => res.json({ user: { id: req.user.id, username: req.user.username, isAdmin: !!req.user.admin } }));
+app.get('/api/auth/me', auth, (req, res) => res.json({ user: userView(db.prepare('SELECT * FROM users WHERE id=?').get(req.user.id)) }));
+app.patch('/api/account',auth,(req,res)=>{
+ const parsed=z.object({displayName:z.string().trim().max(80)}).safeParse(req.body);if(!parsed.success)return fail(res,'Nome inválido (até 80 caracteres).');
+ db.prepare('UPDATE users SET display_name=? WHERE id=?').run(parsed.data.displayName,req.user.id);res.json({user:userView(db.prepare('SELECT * FROM users WHERE id=?').get(req.user.id))});
+});
+app.post('/api/account/password',auth,loginLimiter,asyncHandler(async(req,res)=>{
+ const parsed=z.object({currentPassword:z.string().min(1).max(200),newPassword:z.string().min(10).max(200)}).safeParse(req.body);if(!parsed.success)return fail(res,'Informe a senha atual e uma nova senha de ao menos 10 caracteres.');
+ const row=db.prepare('SELECT * FROM users WHERE id=?').get(req.user.id);if(!await bcrypt.compare(parsed.data.currentPassword,row.password_hash))return fail(res,'Senha atual incorreta.',403);
+ const hash=await bcrypt.hash(parsed.data.newPassword,12);const changed=db.prepare('UPDATE users SET password_hash=?,session_version=session_version+1 WHERE id=? AND password_hash=? AND session_version=?').run(hash,row.id,row.password_hash,row.session_version);if(!changed.changes)return fail(res,'A conta foi alterada. Entre novamente e tente outra vez.',409);
+ const token=jwt.sign({id:row.id,username:row.username,admin:!!row.is_admin,sessionVersion:row.session_version+1},SECRET,{expiresIn:'30d'});res.cookie('kazari_session',token,tokenCookie(req));res.json({ok:true});
+}));
+app.get('/api/account/avatar',auth,(req,res)=>{const row=db.prepare('SELECT avatar FROM users WHERE id=?').get(req.user.id);if(!row?.avatar)return res.sendStatus(404);res.set('Cache-Control','private, no-store');res.type('image/webp').send(row.avatar);});
+app.post('/api/account/avatar',auth,upload.single('image'),asyncHandler(async(req,res)=>{if(!req.file)return fail(res,'Selecione uma imagem.');let avatar;try{avatar=await sharp(req.file.buffer,{limitInputPixels:40000000}).rotate().resize(512,512,{fit:'cover',position:'attention'}).webp({quality:80}).toBuffer();}catch{return fail(res,'Não foi possível processar a imagem.');}const version=crypto.randomUUID();db.prepare('UPDATE users SET avatar=?,avatar_version=? WHERE id=?').run(avatar,version,req.user.id);res.json({user:userView(db.prepare('SELECT * FROM users WHERE id=?').get(req.user.id))});}));
+app.delete('/api/account/avatar',auth,(req,res)=>{db.prepare('UPDATE users SET avatar=NULL,avatar_version=NULL WHERE id=?').run(req.user.id);res.json({user:userView(db.prepare('SELECT * FROM users WHERE id=?').get(req.user.id))});});
 
 app.post('/api/invites', auth, admin, (req, res) => {
  const code = crypto.randomBytes(18).toString('base64url'); const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();

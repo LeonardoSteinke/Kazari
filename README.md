@@ -7,6 +7,9 @@ categorias hierárquicas, tags, campos personalizados e localização física.
 
 - Contas isoladas; primeira conta com código master; novas contas por convite de
   uso único e validade de sete dias.
+- Perfil com nome de exibição separado do login, foto de perfil processada em
+  WebP e alteração de senha com confirmação da senha atual. A alteração de senha
+  encerra as outras sessões da conta.
 - Vários espaços por conta, isolados por padrão e compartilhados somente por
   convite explícito do proprietário.
 - Compartilhamento de espaço por nome de usuário com papéis de editor ou leitor;

@@ -1,12 +1,12 @@
 import { openDB, DBSchema } from 'idb';
-import { api, ApiError, Item, json } from './api';
+import { api, ApiError, Item, User, json } from './api';
 import { observeApiBuild } from './version';
 
 type Operation = { id: string; userId: number; localId?: string; spaceId: number; kind: 'create'|'update'|'delete'|'restore'|'image'|'meta'; payload?: any; blob?: Blob; filename?: string; mode?: string; path?:string; method?:string; error?:string };
 interface KazariDB extends DBSchema {
   snapshots: { key: string; value: { key: string; items: Item[]; at: string; meta?: Record<string, unknown> } };
   outbox: { key: string; value: Operation; indexes: { 'by-user': number } };
-  users: { key: number; value: { id: number; username: string; isAdmin: boolean } };
+  users: { key: number; value: User };
   spaces: { key: number; value: { id: number; name: string; role: string }[] };
   thumbs: { key: string; value: Blob };
 }

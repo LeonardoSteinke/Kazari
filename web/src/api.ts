@@ -1,6 +1,6 @@
 import { observeApiBuild } from './version';
 
-export type User = { id: number; username: string; isAdmin: boolean };
+export type User = { id: number; username: string; displayName?:string; avatarUrl?:string|null; isAdmin: boolean };
 export type Space = { id: number; name: string; role: 'owner' | 'editor' | 'reader' };
 export type SpaceMember = { id: number; username: string; role: 'owner' | 'editor' | 'reader' };
 export type NodeRecord = { id: number; spaceId: number; parentId: number | null; name: string; icon?: string | null };
