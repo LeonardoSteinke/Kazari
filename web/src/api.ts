@@ -3,15 +3,15 @@ import { observeApiBuild } from './version';
 export type User = { id: number; username: string; isAdmin: boolean };
 export type Space = { id: number; name: string; role: 'owner' | 'editor' | 'reader' };
 export type SpaceMember = { id: number; username: string; role: 'owner' | 'editor' | 'reader' };
-export type NodeRecord = { id: number; spaceId: number; parentId: number | null; name: string };
+export type NodeRecord = { id: number; spaceId: number; parentId: number | null; name: string; icon?: string | null };
 export type Tag = { id: number; spaceId: number; name: string };
 export type CustomField = { id: number; spaceId: number; name: string; type: 'text'|'number'|'date'|'currency'|'select'|'boolean'; options: string[] };
 export type Item = {
   id: number | string; spaceId: number; title: string; description: string; locationId: number | null;
   purchaseUrl: string; purchaseLabel: string; customValues: Record<string, unknown>; imageId: string | null;
   imageMode: string; createdAt: string; updatedAt: string; deletedAt: string | null;
-  categories: { id: number; name: string; parentId: number | null }[]; tags: { id: number; name: string }[];
-  location: { id: number; name: string; parentId: number | null } | null; imageUrl: string | null; thumbnailUrl: string | null;
+  categories: { id: number; name: string; parentId: number | null; icon?: string | null }[]; tags: { id: number; name: string }[];
+  location: { id: number; name: string; parentId: number | null; icon?: string | null } | null; imageUrl: string | null; thumbnailUrl: string | null;
   pending?: boolean; pendingImage?: Blob; offlineThumbnail?: Blob;
 };
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }

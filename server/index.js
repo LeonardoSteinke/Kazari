@@ -153,19 +153,33 @@ app.delete('/api/spaces/:id/members/:userId',auth,(req,res)=>{
  res.json({ok:true});
 });
 function treeRoutes(table, noun) {
+ const icons=['none','banheiro','cozinha','decoracao','eletros','escritorio','louca','moveis','quarto','sala','utensilios'];
  app.get(`/api/${noun}`, auth, (req, res) => {
    const sid = parseId(req.query.spaceId); if (!sid) return fail(res, 'spaceId obrigatório.');
    if (!canAccessSpace(sid,req.user.id)) return fail(res, 'Espaço não encontrado.', 404);
-   res.json(db.prepare(`SELECT id,space_id AS spaceId,parent_id AS parentId,name FROM ${table} WHERE space_id=? ORDER BY name COLLATE NOCASE`).all(sid));
+   res.json(db.prepare(`SELECT id,space_id AS spaceId,parent_id AS parentId,name,icon FROM ${table} WHERE space_id=? ORDER BY name COLLATE NOCASE`).all(sid));
  });
  app.post(`/api/${noun}`, auth, (req, res) => {
    const sid = parseId(req.body?.spaceId); if (!sid) return fail(res, 'spaceId obrigatório.');
    if (!canAccessSpace(sid,req.user.id,true)) return fail(res, 'Sem permissão para editar.', 403);
    const name = z.string().trim().min(1).max(100).safeParse(req.body?.name); if (!name.success) return fail(res, 'Nome inválido.');
    const parent = req.body?.parentId ? parseId(req.body.parentId) : null;
+   const icon = req.body?.icon == null || req.body.icon === '' ? null : z.enum(icons).safeParse(req.body.icon).success ? req.body.icon : undefined;
+   if (icon === undefined) return fail(res, 'Ícone inválido.');
    if (parent && !db.prepare(`SELECT id FROM ${table} WHERE id=? AND space_id=?`).get(parent, sid)) return fail(res, 'Categoria ou localização pai inválida.');
-   const r = db.prepare(`INSERT INTO ${table}(space_id,parent_id,name) VALUES(?,?,?)`).run(sid, parent, name.data);
-   res.status(201).json({ id: Number(r.lastInsertRowid), spaceId: sid, parentId: parent, name: name.data });
+   const r = db.prepare(`INSERT INTO ${table}(space_id,parent_id,name,icon) VALUES(?,?,?,?)`).run(sid, parent, name.data, icon);
+   res.status(201).json({ id: Number(r.lastInsertRowid), spaceId: sid, parentId: parent, name: name.data, icon });
+ });
+ app.patch(`/api/${noun}/:id`, auth, (req,res)=>{
+   const id=parseId(req.params.id);const row=id&&db.prepare(`SELECT space_id AS spaceId FROM ${table} WHERE id=?`).get(id);
+   if(!row)return fail(res,'Não encontrado.',404);
+   if(!canAccessSpace(row.spaceId,req.user.id,true))return fail(res,'Sem permissão.',403);
+   const name=req.body?.name===undefined?undefined:z.string().trim().min(1).max(100).safeParse(req.body.name);
+   if(name&& !name.success)return fail(res,'Nome inválido.');
+   let icon;
+   if(req.body?.icon!==undefined){icon=req.body.icon==null||req.body.icon===''?null:z.enum(icons).safeParse(req.body.icon).success?req.body.icon:undefined;if(icon===undefined&&req.body.icon!==null&&req.body.icon!=='')return fail(res,'Ícone inválido.');}
+   db.prepare(`UPDATE ${table} SET name=COALESCE(?,name),icon=CASE WHEN ? THEN ? ELSE icon END WHERE id=?`).run(name?.data||null,req.body?.icon!==undefined?1:0,icon??null,id);
+   res.json(db.prepare(`SELECT id,space_id AS spaceId,parent_id AS parentId,name,icon FROM ${table} WHERE id=?`).get(id));
  });
  app.delete(`/api/${noun}/:id`, auth, (req, res) => {
    const row = db.prepare(`SELECT space_id FROM ${table} WHERE id=?`).get(req.params.id); if (!row) return fail(res, 'Não encontrado.', 404);
@@ -212,9 +226,9 @@ function getItem(id, includeDeleted = false) {
  return { id: item.id, spaceId: item.space_id, title: item.title, description: item.description, locationId: item.location_id,
    purchaseUrl: item.purchase_url, purchaseLabel: item.purchase_label, customValues: JSON.parse(item.custom_values), imageId: item.image_id, imageFormat:item.image_format,
    imageMode: item.image_mode, createdAt: item.created_at, updatedAt: item.updated_at, deletedAt: item.deleted_at,
-   categories: db.prepare('SELECT c.id,c.name,c.parent_id AS parentId FROM item_categories ic JOIN categories c ON c.id=ic.category_id WHERE ic.item_id=? ORDER BY c.name').all(id),
+   categories: db.prepare('SELECT c.id,c.name,c.parent_id AS parentId,c.icon FROM item_categories ic JOIN categories c ON c.id=ic.category_id WHERE ic.item_id=? ORDER BY c.name').all(id),
    tags: db.prepare('SELECT t.id,t.name FROM item_tags it JOIN tags t ON t.id=it.tag_id WHERE it.item_id=? ORDER BY t.name').all(id),
-   location: item.location_id ? db.prepare('SELECT id,name,parent_id AS parentId FROM locations WHERE id=?').get(item.location_id) : null,
+   location: item.location_id ? db.prepare('SELECT id,name,parent_id AS parentId,icon FROM locations WHERE id=?').get(item.location_id) : null,
    imageUrl: item.image_id ? `/api/items/${id}/image?v=${item.image_id}` : null, thumbnailUrl: item.image_id ? `/api/items/${id}/thumbnail?v=${item.image_id}` : null };
 }
 const itemSchema = z.object({ spaceId: z.number().int().positive(), title: z.string().trim().min(1).max(160), description: z.string().max(10000).optional(), clientId:z.string().max(100).optional(),

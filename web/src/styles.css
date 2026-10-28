@@ -180,6 +180,13 @@ h1, h2, p { margin-top: 0; }
 .tree-add input { grid-column: 1; grid-row: 1; min-width: 0; }
 .tree-add select { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
 .tree-add .outline { grid-column: 2; grid-row: 1; min-height: 46px; padding: 8px; }
+.tree-icon-picker { display: flex; min-width: 0; min-height: 46px; grid-column: 1 / -1; align-items: center; gap: 8px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fbf8f1; }
+.tree-icon-picker select, .tree-row-icon select { min-width: 0; min-height: 40px; padding: 6px 28px 6px 8px; border: 0; background: transparent; box-shadow: none; font-size: 14px; }
+.tree-list .tree-row { min-height: 58px; gap: 8px; }
+.tree-row-name { display: flex; min-width: 0; flex: 1 1 auto; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.tree-row-icon { display: flex; min-width: 0; align-items: center; gap: 3px; color: var(--muted); font-size: 11px; }
+.tree-row-icon select { width: 116px; min-height: 40px; padding-right: 22px; font-size: 12px; }
+.detail-location { display: flex; align-items: center; gap: 6px; }
 .tree-list { max-height: 260px; overflow: auto; margin-top: 12px; overscroll-behavior: contain; }
 .tree-list > div { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid #eee7da; font-size: 13px; }
 .tree-list > div > span { min-width: 0; overflow-wrap: anywhere; }
@@ -297,6 +304,10 @@ h1, h2, p { margin-top: 0; }
 .list-view .card-actions { margin-top: 4px; }
 
 @media (max-width: 359px) {
+  .tree-list .tree-row { flex-wrap: wrap; padding: 6px 0; }
+  .tree-row-name { flex-basis: calc(100% - 52px); }
+  .tree-row-icon { margin-left: auto; }
+  .tree-row-icon select { width: 106px; }
   .list-view .item-card { grid-template-columns: 74px minmax(0, 1fr); }
   .list-view .image-frame { width: 74px; min-height: 104px; }
   .list-view .item-card-body { padding: 7px 9px; }

@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS space_members (
 );
 CREATE TABLE IF NOT EXISTS categories (
  id INTEGER PRIMARY KEY, space_id INTEGER NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
- parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL, name TEXT NOT NULL,
+ parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL, name TEXT NOT NULL, icon TEXT,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS tags (
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS tags (
 );
 CREATE TABLE IF NOT EXISTS locations (
  id INTEGER PRIMARY KEY, space_id INTEGER NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
- parent_id INTEGER REFERENCES locations(id) ON DELETE SET NULL, name TEXT NOT NULL
+ parent_id INTEGER REFERENCES locations(id) ON DELETE SET NULL, name TEXT NOT NULL, icon TEXT
 );
 CREATE TABLE IF NOT EXISTS custom_fields (
  id INTEGER PRIMARY KEY, space_id INTEGER NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
@@ -82,6 +82,9 @@ if (!db.prepare('PRAGMA table_info(items)').all().some(column => column.name ===
 }
 if (!db.prepare('PRAGMA table_info(spaces)').all().some(column => column.name === 'deleted_at')) {
   db.exec('ALTER TABLE spaces ADD COLUMN deleted_at TEXT');
+}
+for (const table of ['categories','locations']) {
+  if (!db.prepare(`PRAGMA table_info(${table})`).all().some(column => column.name === 'icon')) db.exec(`ALTER TABLE ${table} ADD COLUMN icon TEXT`);
 }
 
 export function snapshot() {
