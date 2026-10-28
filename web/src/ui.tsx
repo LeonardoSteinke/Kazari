@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, CustomField, Item, NodeRecord, Space, Tag, User, json } from './api';
 import { cacheItems, cacheMeta, cacheSpaces, cacheUser, cachedItems, cachedMeta, cachedSpaces, cachedUser, enqueue, pendingCount, syncQueue } from './offline';
+import { startVersionWatch } from './version';
 
 type Tab='catalog'|'trash'|'organize'|'settings';
 type Meta={categories:NodeRecord[];locations:NodeRecord[];tags:Tag[];fields:CustomField[]};
@@ -66,7 +67,7 @@ function App(){
  const sync=useCallback(async()=>{if(!user||!navigator.onLine)return;setOffline(false);try{const r=await syncQueue(user.id);setPending(r.pending);if(r.completed){await loadCatalog();if(tab==='trash')await reloadTrash();}if(r.error)notify(`Sincronização interrompida: ${r.error}`);else if(r.completed)notify(`${r.completed} alteração(ões) sincronizada(s).`);}catch{}},[user?.id,loadCatalog,tab,reloadTrash]);
  useEffect(()=>{syncRef.current=sync;},[sync]);
  useEffect(()=>{if(!user)return;setLastSync(localStorage.getItem(`kazari:last-sync:${user.id}`)||'');const onOnline=()=>{setOffline(false);syncRef.current();};const onOffline=()=>setOffline(true);window.addEventListener('online',onOnline);window.addEventListener('offline',onOffline);pendingCount(user.id).then(setPending);const timer=window.setInterval(()=>pendingCount(user.id).then(setPending),5000);if(navigator.onLine)syncRef.current();return()=>{window.removeEventListener('online',onOnline);window.removeEventListener('offline',onOffline);window.clearInterval(timer);};},[]);
- useEffect(()=>{let stopped=false;const checkVersion=async()=>{try{const r=await fetch('/api/version',{cache:'no-store',credentials:'include'});if(!r.ok)return;const v=await r.json();if(!stopped&&v.build&&v.build!=='dev'&&v.build!==__BUILD_ID__){const key='kazari:reloaded-at';const last=Number(sessionStorage.getItem(key)||0);if(Date.now()-last<60000)return;sessionStorage.setItem(key,String(Date.now()));if('caches'in window)await Promise.all((await caches.keys()).map(name=>caches.delete(name)));if('serviceWorker'in navigator)await Promise.all((await navigator.serviceWorker.getRegistrations()).map(reg=>reg.unregister()));location.reload();}}catch{/* offline: keep the installed shell and retry on focus */}};const visible=()=>{if(document.visibilityState==='visible')checkVersion();};checkVersion();document.addEventListener('visibilitychange',visible);window.addEventListener('focus',visible);const timer=window.setInterval(checkVersion,15*60*1000);return()=>{stopped=true;document.removeEventListener('visibilitychange',visible);window.removeEventListener('focus',visible);window.clearInterval(timer);};},[]);
+ useEffect(()=>startVersionWatch(),[]);
  useEffect(()=>{const itemParam=new URLSearchParams(location.search).get('item');if(itemParam&&items.length){const found=items.find(x=>String(x.id)===itemParam);if(found){setEditing(found);history.replaceState(null,'',location.pathname);}}},[items]);
 
  async function createSpace(e:FormEvent){e.preventDefault();const name=newSpace.trim();if(!name)return;try{const row=await api<Space>('/api/spaces',json('POST',{name}));const next=[...spaces,row];setSpaces(next);setSpaceId(row.id);await cacheSpaces(user!.id,next);setNewSpace('');notify('Espaço criado.');}catch(e){notify(errorMessage(e));}}

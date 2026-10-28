@@ -1,3 +1,5 @@
+import { observeApiBuild } from './version';
+
 export type User = { id: number; username: string; isAdmin: boolean };
 export type Space = { id: number; name: string; role: 'owner' | 'editor' | 'reader' };
 export type NodeRecord = { id: number; spaceId: number; parentId: number | null; name: string };
@@ -16,6 +18,7 @@ export class ApiError extends Error { constructor(public status: number, message
 export async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
   const isForm = options.body instanceof FormData;
   const response = await fetch(url, { ...options, credentials: 'include', headers: { ...(isForm ? {} : { 'Content-Type': 'application/json' }), ...options.headers } });
+  observeApiBuild(response);
   if (!response.ok) { let message = 'Não foi possível concluir a operação.'; try { const payload = await response.json(); message = payload.error || payload.message || message; } catch {} throw new ApiError(response.status, message); }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

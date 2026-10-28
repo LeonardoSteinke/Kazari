@@ -21,9 +21,14 @@ if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process
   throw new Error('Configure JWT_SECRET e MASTER_CODE fortes antes de iniciar em produção.');
 }
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 }, fileFilter: (_req, file, cb) => cb(null, /^image\/(jpeg|png|webp|heic|heif|avif)$/.test(file.mimetype)) });
+// Keep the build identifier on every API response so clients can detect a
+// deploy on their next request, even when the PWA has been suspended.
+const webDir=path.resolve('web/dist');
+let buildId='dev'; try { buildId=JSON.parse(readFileSync(path.join(webDir,'version.json'),'utf8')).build; } catch {}
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], imgSrc: ["'self'", 'blob:', 'data:'], styleSrc: ["'self'"], fontSrc: ["'self'"], scriptSrc: ["'self'"], connectSrc: ["'self'"], objectSrc: ["'none'"], baseUri: ["'self'"] } } }));
+app.use('/api', (_req,res,next) => { res.set('X-Kazari-Build',buildId||'dev'); next(); });
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
@@ -260,9 +265,6 @@ setTimeout(() => purgeTrash().catch(err=>console.error('purge trash:',err)),2000
 setInterval(() => snapshot().catch(err=>console.error('backup:',err)), 24*60*60*1000).unref();
 setTimeout(() => snapshot().catch(err=>console.error('backup:',err)),5000).unref();
 
-// Build id do bundle injetado no ambiente de build e servido sem cache.
-const webDir=path.resolve('web/dist');
-let buildId='dev'; try { buildId=JSON.parse(readFileSync(path.join(webDir,'version.json'),'utf8')).build; } catch {}
 app.get('/api/version',(_req,res)=>{res.set('Cache-Control','no-store');res.json({build:buildId||'dev'});});
 app.use(express.static(webDir,{setHeaders(res,file){ const base=path.basename(file); res.set('Cache-Control',/[.-][A-Za-z0-9_-]{8,}\.(js|css|woff2?|png|svg)$/.test(base)?'public, max-age=31536000, immutable':'no-cache'); }}));
 app.get(/^(?!\/api\/).*/,(_req,res)=>{res.set('Cache-Control','no-cache');res.sendFile(path.join(webDir,'index.html'));});

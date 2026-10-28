@@ -1,5 +1,6 @@
 import { openDB, DBSchema } from 'idb';
 import { api, Item, json } from './api';
+import { observeApiBuild } from './version';
 
 type Operation = { id: string; userId: number; localId?: string; spaceId: number; kind: 'create'|'update'|'delete'|'restore'|'image'; payload?: any; blob?: Blob; filename?: string; mode?: string };
 interface KazariDB extends DBSchema {
@@ -24,7 +25,7 @@ export async function cachedMeta(userId:number,spaceId:number) { return (await (
 export async function cacheItems(userId:number,spaceId:number,items:Item[]) {
   const db=await dbPromise; const key=snapshotKey(userId,spaceId); const old=await db.get('snapshots',key); const visible=items.slice(0,80);
   for(const item of visible) if(item.thumbnailUrl && !item.pendingImage) {
-    try { const response=await fetch(item.thumbnailUrl,{credentials:'include'}); if(response.ok) await db.put('thumbs',await response.blob(),`${userId}:${item.id}`); } catch {}
+    try { const response=await fetch(item.thumbnailUrl,{credentials:'include'}); observeApiBuild(response); if(response.ok) await db.put('thumbs',await response.blob(),`${userId}:${item.id}`); } catch {}
   }
   await db.put('snapshots',{key,items:visible,at:new Date().toISOString(),meta:old?.meta});
 }

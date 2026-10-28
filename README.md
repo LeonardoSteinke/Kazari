@@ -24,9 +24,10 @@ categorias hierárquicas, tags, campos personalizados e localização física.
   imagem.
 - PWA com shell offline, últimas 80 fichas consultadas e miniaturas locais,
   alterações em IndexedDB e fila idempotente para sincronização ao reconectar.
-- Verificação de `/api/version` ao abrir, voltar ao app e a cada 15 minutos;
-  deploy novo limpa o cache antigo e recarrega a interface sem apagar a fila
-  offline.
+- A versão do servidor acompanha cada resposta da API; toda chamada detecta um
+  deploy novo e atualiza a interface imediatamente. Há também verificação ao
+  abrir, voltar ao app e a cada 15 minutos quando ele está ocioso. A atualização
+  limpa o cache antigo sem apagar a fila offline.
 
 ## Stack
 
