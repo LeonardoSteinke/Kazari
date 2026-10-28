@@ -41,9 +41,12 @@ function admin(req, res, next) { if (!req.user?.admin) return res.status(403).js
 const userView = (u) => ({ id: u.id, username: u.username, isAdmin: !!u.is_admin });
 const parseId = (v) => Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null;
 function fail(res, message, status = 400) { return res.status(status).json({ error: message }); }
+const registerLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, handler: (_req, res) => fail(res, 'Muitas tentativas de cadastro. Aguarde 15 minutos e tente novamente.', 429) });
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 12, handler: (_req, res) => fail(res, 'Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente.', 429) });
+const asyncHandler = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'kazari' }));
-app.post('/api/auth/register', rateLimit({ windowMs: 15 * 60 * 1000, limit: 10 }), async (req, res) => {
+app.post('/api/auth/register', registerLimiter, asyncHandler(async (req, res) => {
  const schema = z.object({ username: z.string().trim().min(3).max(40).regex(/^[\p{L}\p{N}_.-]+$/u), password: z.string().min(10).max(200), code: z.string().trim().min(8).max(200) });
  const parsed = schema.safeParse(req.body); if (!parsed.success) return fail(res, 'Informe usuário, senha de ao menos 10 caracteres e código válido.');
  const { username, password, code } = parsed.data;
@@ -60,15 +63,15 @@ app.post('/api/auth/register', rateLimit({ windowMs: 15 * 60 * 1000, limit: 10 }
   }).immediate();
  }catch(e){if(e.code==='DUPLICATE_USER'||String(e.message).includes('UNIQUE constraint failed: users.username'))return fail(res,'Esse nome de usuário já está em uso.',409);if(e.code==='INVALID_MASTER')return fail(res,'Código master inválido.',403);if(e.code==='INVALID_INVITE')return fail(res,'Código de convite inválido, expirado ou já utilizado.',403);throw e;}
  res.cookie('kazari_session', jwt.sign(user, SECRET, { expiresIn: '30d' }), tokenCookie(req)); res.status(201).json({ user: { id: user.id, username, isAdmin:user.admin } });
-});
-app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, limit: 12 }), async (req, res) => {
+}));
+app.post('/api/auth/login', loginLimiter, asyncHandler(async (req, res) => {
  const { username, password } = req.body || {};
  if (typeof username !== 'string' || typeof password !== 'string') return fail(res, 'Informe usuário e senha.', 400);
  const row = db.prepare('SELECT * FROM users WHERE username=? COLLATE NOCASE').get(username.trim());
  if (!row || !(await bcrypt.compare(password, row.password_hash))) return fail(res, 'Usuário ou senha incorretos.', 401);
  const user = { id: row.id, username: row.username, admin: !!row.is_admin };
  res.cookie('kazari_session', jwt.sign(user, SECRET, { expiresIn: '30d' }), tokenCookie(req)); res.json({ user: userView(row) });
-});
+}));
 app.post('/api/auth/logout', (_req, res) => { res.clearCookie('kazari_session', { path: '/' }); res.json({ ok: true }); });
 app.get('/api/auth/me', auth, (req, res) => res.json({ user: { id: req.user.id, username: req.user.username, isAdmin: !!req.user.admin } }));
 
@@ -261,4 +264,11 @@ let buildId='dev'; try { buildId=JSON.parse(readFileSync(path.join(webDir,'versi
 app.get('/api/version',(_req,res)=>{res.set('Cache-Control','no-store');res.json({build:buildId||'dev'});});
 app.use(express.static(webDir,{setHeaders(res,file){ const base=path.basename(file); res.set('Cache-Control',/[.-][A-Za-z0-9_-]{8,}\.(js|css|woff2?|png|svg)$/.test(base)?'public, max-age=31536000, immutable':'no-cache'); }}));
 app.get(/^(?!\/api\/).*/,(_req,res)=>{res.set('Cache-Control','no-cache');res.sendFile(path.join(webDir,'index.html'));});
+app.use((err, req, res, next) => {
+ console.error(`Request failed: ${req.method} ${req.path}`, err);
+ if (res.headersSent) return next(err);
+ const status = Number(err.status || err.statusCode) || 500;
+ const message = status >= 500 ? 'Falha interna ao concluir a operação.' : err.message || 'Requisição inválida.';
+ res.status(status).json({ error: message });
+});
 app.listen(PORT,()=>console.log(`Kazari na porta ${PORT}`));
