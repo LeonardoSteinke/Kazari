@@ -39,11 +39,12 @@ function auth(req, res, next) {
    const token = req.cookies.kazari_session;
    if (!token) return res.status(401).json({ error: 'Entre na sua conta para continuar.' });
    req.user = jwt.verify(token, SECRET);
-   const account=db.prepare('SELECT is_admin,disabled_at FROM users WHERE id=?').get(req.user.id);
+   const account=db.prepare('SELECT is_admin,disabled_at,session_version FROM users WHERE id=?').get(req.user.id);
    if (!account || account.disabled_at) {
      res.clearCookie('kazari_session', { path: '/' });
      return res.status(403).json({ error: 'Esta conta está desativada.' });
    }
+   if ((req.user.sessionVersion || 0)!==account.session_version) { res.clearCookie('kazari_session', { path: '/' }); return res.status(401).json({error:'Esta sessão foi encerrada. Entre novamente.'}); }
    req.user.admin=!!account.is_admin;
    next();
  } catch { res.clearCookie('kazari_session', { path: '/' }); res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' }); }
@@ -82,7 +83,7 @@ app.post('/api/auth/login', loginLimiter, asyncHandler(async (req, res) => {
  if (!row || !(await bcrypt.compare(password, row.password_hash))) return fail(res, 'Usuário ou senha incorretos.', 401);
  if (row.disabled_at) return fail(res,'Esta conta está desativada. Fale com o administrador.',403);
  db.prepare('UPDATE users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?').run(row.id);
- const user = { id: row.id, username: row.username, admin: !!row.is_admin };
+ const user = { id: row.id, username: row.username, admin: !!row.is_admin, sessionVersion:row.session_version };
  res.cookie('kazari_session', jwt.sign(user, SECRET, { expiresIn: '30d' }), tokenCookie(req)); res.json({ user: userView(row) });
 }));
 app.post('/api/auth/logout', (_req, res) => { res.clearCookie('kazari_session', { path: '/' }); res.json({ ok: true }); });
@@ -123,9 +124,15 @@ app.patch('/api/admin/users/:id/status',auth,admin,(req,res)=>{
  if(!id||!disabled.success)return fail(res,'Dados de conta inválidos.');
  if(id===req.user.id&&disabled.data)return fail(res,'A conta administradora atual não pode desativar a si mesma.');
  const target=db.prepare('SELECT id FROM users WHERE id=?').get(id);if(!target)return fail(res,'Conta não encontrada.',404);
- db.prepare('UPDATE users SET disabled_at=? WHERE id=?').run(disabled.data?new Date().toISOString():null,id);
+ db.transaction(()=>{db.prepare('UPDATE users SET disabled_at=?,session_version=session_version+? WHERE id=?').run(disabled.data?new Date().toISOString():null,disabled.data?1:0,id);db.prepare('INSERT INTO admin_audit(actor_id,target_id,action) VALUES(?,?,?)').run(req.user.id,id,disabled.data?'Conta desativada':'Conta reativada');})();
  res.json({id,disabled:disabled.data});
 });
+app.post('/api/admin/users/:id/revoke-sessions',auth,admin,(req,res)=>{
+ const id=parseId(req.params.id);if(!id||!db.prepare('SELECT 1 FROM users WHERE id=?').get(id))return fail(res,'Conta não encontrada.',404);
+ if(id===req.user.id)return fail(res,'Use sair da conta para encerrar a sessão atual.');
+ db.transaction(()=>{db.prepare('UPDATE users SET session_version=session_version+1 WHERE id=?').run(id);db.prepare('INSERT INTO admin_audit(actor_id,target_id,action) VALUES(?,?,?)').run(req.user.id,id,'Sessões encerradas');})();res.json({ok:true});
+});
+app.get('/api/admin/audit',auth,admin,(_req,res)=>res.json(db.prepare('SELECT a.id,a.action,a.created_at AS createdAt,actor.username AS actor,target.username AS target FROM admin_audit a JOIN users actor ON actor.id=a.actor_id LEFT JOIN users target ON target.id=a.target_id ORDER BY a.id DESC LIMIT 100').all()));
 
 app.get('/api/spaces', auth, (req, res) => res.json(db.prepare(`
  SELECT * FROM (

@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS invites (
  id INTEGER PRIMARY KEY, code_hash TEXT NOT NULL UNIQUE, created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
  expires_at TEXT NOT NULL, used_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS admin_audit (
+ id INTEGER PRIMARY KEY, actor_id INTEGER NOT NULL REFERENCES users(id), target_id INTEGER REFERENCES users(id),
+ action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS spaces (
  id INTEGER PRIMARY KEY, name TEXT NOT NULL, owner_id INTEGER NOT NULL REFERENCES users(id),
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -87,6 +91,7 @@ if (!db.prepare('PRAGMA table_info(spaces)').all().some(column => column.name ==
 for (const column of ['last_login_at', 'disabled_at']) {
   if (!db.prepare('PRAGMA table_info(users)').all().some(entry => entry.name === column)) db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
 }
+if (!db.prepare('PRAGMA table_info(users)').all().some(entry => entry.name === 'session_version')) db.exec('ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0');
 for (const table of ['categories','locations']) {
   if (!db.prepare(`PRAGMA table_info(${table})`).all().some(column => column.name === 'icon')) db.exec(`ALTER TABLE ${table} ADD COLUMN icon TEXT`);
 }
