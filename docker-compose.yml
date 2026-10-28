@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    container_name: ${PROJECT_NAME:-kazari}
+    restart: unless-stopped
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    volumes:
+      - ./data:/app/data
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    external: true
+    name: ${PROXY_NETWORK:-media_server_media_net}
+

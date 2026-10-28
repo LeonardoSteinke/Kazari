@@ -1,0 +1,9 @@
+node_modules/
+dist/
+web/dist/
+*.tsbuildinfo
+data/
+.env
+npm-debug.log*
+.DS_Store
+
