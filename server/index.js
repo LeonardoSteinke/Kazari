@@ -89,11 +89,16 @@ app.get('/api/invites', auth, admin, (_req, res) => res.json(db.prepare("SELECT 
 
 app.get('/api/spaces', auth, (req, res) => res.json(db.prepare(`
  SELECT * FROM (
-  SELECT id,name,'owner' AS role,created_at AS createdAt FROM spaces WHERE owner_id=?
+  SELECT id,name,'owner' AS role,created_at AS createdAt FROM spaces WHERE owner_id=? AND deleted_at IS NULL
   UNION ALL
-  SELECT s.id,s.name,m.role,s.created_at AS createdAt FROM space_members m JOIN spaces s ON s.id=m.space_id WHERE m.user_id=?
+  SELECT s.id,s.name,m.role,s.created_at AS createdAt FROM space_members m JOIN spaces s ON s.id=m.space_id WHERE m.user_id=? AND s.deleted_at IS NULL
  ) ORDER BY name COLLATE NOCASE
 `).all(req.user.id,req.user.id)));
+app.get('/api/spaces/deleted',auth,(req,res)=>res.json(db.prepare(`
+ SELECT id,name,deleted_at AS deletedAt FROM spaces
+ WHERE owner_id=? AND deleted_at IS NOT NULL AND julianday(deleted_at)>julianday('now','-7 days')
+ ORDER BY deleted_at DESC
+`).all(req.user.id)));
 app.post('/api/spaces', auth, (req, res) => {
  const name = z.string().trim().min(1).max(80).safeParse(req.body?.name); if (!name.success) return fail(res, 'Nome do espaço obrigatório (até 80 caracteres).');
  const r=db.prepare('INSERT INTO spaces(name,owner_id) VALUES(?,?)').run(name.data,req.user.id);
@@ -102,6 +107,25 @@ app.post('/api/spaces', auth, (req, res) => {
 app.patch('/api/spaces/:id', auth, (req,res,next)=>isSpaceOwner(Number(req.params.id),req.user.id)?next():fail(res,'Apenas o proprietário pode renomear este espaço.',403), (req, res) => {
  const name=z.string().trim().min(1).max(80).safeParse(req.body?.name);if(!name.success)return fail(res,'Nome do espaço inválido.');
  db.prepare('UPDATE spaces SET name=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(name.data,req.params.id);res.json({id:Number(req.params.id),name:name.data});
+});
+app.delete('/api/spaces/:id',auth,(req,res)=>{
+ const sid=parseId(req.params.id);if(!sid||!isSpaceOwner(sid,req.user.id))return fail(res,'Apenas o proprietário pode excluir este espaço.',403);
+ const space=db.prepare('SELECT name FROM spaces WHERE id=? AND owner_id=? AND deleted_at IS NULL').get(sid,req.user.id);
+ if(!space)return fail(res,'Espaço não encontrado.',404);
+ if(req.body?.confirmName!==space.name)return fail(res,'Digite o nome exato do espaço para confirmar a exclusão.');
+ const active=db.prepare('SELECT COUNT(*) AS total FROM spaces WHERE owner_id=? AND deleted_at IS NULL').get(req.user.id).total;
+ if(active<=1)return fail(res,'Crie outro espaço antes de excluir o último espaço ativo.');
+ const deletedAt=new Date().toISOString();
+ db.prepare('UPDATE spaces SET deleted_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(deletedAt,sid);
+ res.json({ok:true,id:sid,name:space.name,deletedAt,restoreDays:7});
+});
+app.post('/api/spaces/:id/restore',auth,(req,res)=>{
+ const sid=parseId(req.params.id);if(!sid)return fail(res,'Espaço inválido.');
+ const space=db.prepare(`SELECT id,name,deleted_at AS deletedAt FROM spaces WHERE id=? AND owner_id=? AND deleted_at IS NOT NULL`).get(sid,req.user.id);
+ if(!space)return fail(res,'Espaço não encontrado na lixeira.',404);
+ if(!db.prepare("SELECT 1 FROM spaces WHERE id=? AND owner_id=? AND julianday(deleted_at)>julianday('now','-7 days')").get(sid,req.user.id))return fail(res,'O prazo de restauração de 7 dias expirou.',410);
+ db.prepare('UPDATE spaces SET deleted_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(sid);
+ res.json({id:sid,name:space.name,role:'owner'});
 });
 app.get('/api/spaces/:id/members',auth,(req,res)=>{
  const sid=parseId(req.params.id);if(!sid||!isSpaceOwner(sid,req.user.id))return fail(res,'Apenas o proprietário pode gerenciar o acesso.',403);
@@ -174,11 +198,11 @@ app.post('/api/fields', auth, (req, res) => {
 });
 
 function isSpaceOwner(spaceId,userId) {
- return !!db.prepare('SELECT 1 FROM spaces WHERE id=? AND owner_id=?').get(spaceId,userId);
+ return !!db.prepare('SELECT 1 FROM spaces WHERE id=? AND owner_id=? AND deleted_at IS NULL').get(spaceId,userId);
 }
 function canAccessSpace(spaceId, userId, write = false) {
  if(isSpaceOwner(spaceId,userId))return {role:'owner'};
- const member=db.prepare('SELECT role FROM space_members WHERE space_id=? AND user_id=?').get(spaceId,userId);
+ const member=db.prepare('SELECT m.role FROM space_members m JOIN spaces s ON s.id=m.space_id WHERE m.space_id=? AND m.user_id=? AND s.deleted_at IS NULL').get(spaceId,userId);
  if(!member||(write&&member.role!=='editor'))return null;
  return member;
 }
@@ -311,8 +335,18 @@ async function purgeTrash() {
  const remove=db.transaction(rows=>{ for(const row of rows) db.prepare('DELETE FROM items WHERE id=?').run(row.id); }); remove(old);
  for(const row of old) await removeMedia(row.image_id);
 }
+async function purgeDeletedSpaces() {
+ const expired=db.prepare("SELECT id FROM spaces WHERE deleted_at IS NOT NULL AND julianday(deleted_at)<=julianday('now','-7 days')").all();
+ for(const space of expired){
+  const images=db.prepare('SELECT image_id FROM items WHERE space_id=? AND image_id IS NOT NULL').all(space.id);
+  db.prepare('DELETE FROM spaces WHERE id=?').run(space.id);
+  for(const image of images)await removeMedia(image.image_id);
+ }
+}
 setInterval(() => purgeTrash().catch(err=>console.error('purge trash:',err)), 60*60*1000).unref();
 setTimeout(() => purgeTrash().catch(err=>console.error('purge trash:',err)),2000).unref();
+setInterval(() => purgeDeletedSpaces().catch(err=>console.error('purge deleted spaces:',err)), 60*60*1000).unref();
+setTimeout(() => purgeDeletedSpaces().catch(err=>console.error('purge deleted spaces:',err)),2500).unref();
 setInterval(() => snapshot().catch(err=>console.error('backup:',err)), 24*60*60*1000).unref();
 setTimeout(() => snapshot().catch(err=>console.error('backup:',err)),5000).unref();
 

@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS invites (
 );
 CREATE TABLE IF NOT EXISTS spaces (
  id INTEGER PRIMARY KEY, name TEXT NOT NULL, owner_id INTEGER NOT NULL REFERENCES users(id),
- created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ deleted_at TEXT
 );
 CREATE TABLE IF NOT EXISTS space_members (
  space_id INTEGER NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
@@ -78,6 +79,9 @@ if (!db.prepare('PRAGMA table_info(items)').all().some(column => column.name ===
 }
 if (!db.prepare('PRAGMA table_info(items)').all().some(column => column.name === 'image_format')) {
   db.exec("ALTER TABLE items ADD COLUMN image_format TEXT NOT NULL DEFAULT 'webp'");
+}
+if (!db.prepare('PRAGMA table_info(spaces)').all().some(column => column.name === 'deleted_at')) {
+  db.exec('ALTER TABLE spaces ADD COLUMN deleted_at TEXT');
 }
 
 export function snapshot() {
