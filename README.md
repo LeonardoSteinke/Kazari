@@ -23,9 +23,13 @@ categorias hierárquicas, tags, campos personalizados e localização física.
   acima de 10 MB ou para formatos de imagem incompatíveis, redimensiona e
   comprime para WebP até caber. Arquivo de origem pode ter até 25 MB; a cópia
   original não é guardada em paralelo.
-- Mensagem de item pelo menu nativo de compartilhamento (WhatsApp, Mensagens,
-  etc.). O conteúdo enviado é texto; a imagem e o espaço não são compartilhados.
-  Um link interno opcional requer login na conta proprietária.
+- Compartilhamento da imagem armazenada e da descrição pelo menu do aparelho,
+  quando o navegador aceita compartilhar arquivos. Caso contrário, é possível
+  salvar a imagem e copiar a descrição para anexar manualmente. Um link interno
+  opcional requer acesso ao espaço.
+- A ação de salvar imagem baixa o arquivo principal armazenado: no modo
+  otimizado, ele é a versão processada; no modo de alta qualidade, pode ser o
+  original enviado quando coube nos limites de tamanho e resolução.
 - Lixeira recuperável por sete dias, seguida por remoção automática do item e da
   imagem.
 - PWA com shell offline, últimas 80 fichas consultadas e miniaturas locais,
