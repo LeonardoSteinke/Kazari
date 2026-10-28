@@ -277,8 +277,15 @@ app.post('/api/fields', auth, (req, res) => {
  const sid = parseId(req.body?.spaceId); const s = z.object({ name: z.string().trim().min(1).max(50), type: z.enum(['text','number','date','currency','select','boolean']), options: z.array(z.string().max(50)).max(30).optional() }).safeParse(req.body);
  if (!sid || !s.success) return fail(res, 'Definição do campo inválida.');
  if (!canAccessSpace(sid,req.user.id,true)) return fail(res, 'Sem permissão.', 403);
- const r = db.prepare('INSERT INTO custom_fields(space_id,name,type,options) VALUES(?,?,?,?)').run(sid, s.data.name, s.data.type, JSON.stringify(s.data.options || []));
+ const r = db.prepare('INSERT INTO custom_fields(space_id,name,type,options,position) VALUES(?,?,?,?,(SELECT COALESCE(MAX(position),-1)+1 FROM custom_fields WHERE space_id=?))').run(sid, s.data.name, s.data.type, JSON.stringify(s.data.options || []),sid);
  res.status(201).json({ id: Number(r.lastInsertRowid), spaceId: sid, ...s.data, options: s.data.options || [] });
+});
+app.put('/api/fields/order',auth,(req,res)=>{
+ const sid=parseId(req.body?.spaceId);const parsed=z.array(z.number().int().positive()).max(500).safeParse(req.body?.ids);
+ if(!sid||!parsed.success)return fail(res,'Ordem inválida.');if(!canAccessSpace(sid,req.user.id,true))return fail(res,'Sem permissão.',403);
+ const existing=db.prepare('SELECT id FROM custom_fields WHERE space_id=?').all(sid).map(row=>row.id);const ids=parsed.data;
+ if(ids.length!==existing.length||new Set(ids).size!==ids.length||ids.some(id=>!existing.includes(id)))return fail(res,'Os campos mudaram. Atualize a lista antes de reordenar.',409);
+ const save=db.transaction(()=>{const update=db.prepare('UPDATE custom_fields SET position=? WHERE id=? AND space_id=?');ids.forEach((id,index)=>update.run(index,id,sid));});save();res.json({ok:true});
 });
 app.patch('/api/fields/:id',auth,(req,res)=>{
  const id=parseId(req.params.id);const row=id&&db.prepare('SELECT space_id AS spaceId FROM custom_fields WHERE id=?').get(id);if(!row)return fail(res,'Campo não encontrado.',404);if(!canAccessSpace(row.spaceId,req.user.id,true))return fail(res,'Sem permissão.',403);
