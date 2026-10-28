@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Escritório</title>
+<path d="M14 62 H86" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M22 62 V84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M78 62 V84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="26" y="28" width="32" height="22" rx="3" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round"/>
+<path d="M42 50 V62" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M70 62 V44 L78 34" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="79" cy="33" r="5" fill="#C8452D"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Decoração</title>
+<path d="M42 50 H58 L67 78 a4 4 0 0 1 -4 4 H37 a4 4 0 0 1 -4 -4 Z" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M50 50 V28" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M50 41 L39 33" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M50 38 L61 32" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="50" cy="23" r="5" fill="#C8452D"/>
+<circle cx="37" cy="30" r="4" fill="#C8452D"/>
+<circle cx="63" cy="28" r="4" fill="#C8452D"/>
+</svg>

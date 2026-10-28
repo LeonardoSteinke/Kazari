@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Eletros</title>
+<rect x="12" y="28" width="76" height="46" rx="5" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round"/>
+<rect x="20" y="36" width="40" height="30" rx="3" fill="none" stroke="#2B2926" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="74" cy="40" r="5" fill="#C8452D"/>
+<path d="M68 56 H80" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M68 64 H80" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M22 74 V80" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M78 74 V80" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

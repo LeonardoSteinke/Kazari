@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Utensílios</title>
+<ellipse cx="36" cy="30" rx="9" ry="12" fill="#C8452D" stroke="#C8452D" stroke-width="4"/>
+<path d="M36 42 V84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M58 18 V34 a10 10 0 0 0 20 0 V18" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M68 18 V38" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M68 44 V84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

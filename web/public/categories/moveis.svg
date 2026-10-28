@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Móveis</title>
+<rect x="22" y="14" width="56" height="68" rx="4" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round"/>
+<path d="M50 14 V82" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="44" cy="48" r="3.5" fill="#C8452D"/>
+<circle cx="56" cy="48" r="3.5" fill="#C8452D"/>
+<path d="M30 82 V88" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M70 82 V88" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

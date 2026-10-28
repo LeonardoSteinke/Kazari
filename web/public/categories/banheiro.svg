@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Banheiro</title>
+<path d="M14 54 H86 V62 a14 14 0 0 1 -14 14 H28 a14 14 0 0 1 -14 -14 Z" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M24 54 V32 a8 8 0 0 1 8 -8 H40" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M40 24 V32" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="40" cy="42" r="4" fill="#C8452D"/>
+<path d="M28 76 L26 84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M72 76 L74 84" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

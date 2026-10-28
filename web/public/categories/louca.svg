@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Louça</title>
+<path d="M26 40 H66 V56 a20 20 0 0 1 -20 20 H46 a20 20 0 0 1 -20 -20 Z" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M66 46 H72 a7 7 0 0 1 0 14 H65" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M18 84 H74" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="46" cy="56" r="5" fill="#C8452D"/>
+<path d="M38 32 q-4 -5 0 -10" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M52 32 q-4 -5 0 -10" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

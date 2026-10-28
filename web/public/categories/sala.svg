@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Sala</title>
+<path d="M22 50 V36 a8 8 0 0 1 8 -8 H70 a8 8 0 0 1 8 8 V50" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="14" y="50" width="72" height="22" rx="7" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="32" cy="60" r="5" fill="#C8452D"/>
+<path d="M50 54 V68" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M24 72 V80" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M76 72 V80" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>
