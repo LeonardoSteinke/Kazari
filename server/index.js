@@ -149,7 +149,7 @@ function getItem(id, includeDeleted = false) {
    categories: db.prepare('SELECT c.id,c.name,c.parent_id AS parentId FROM item_categories ic JOIN categories c ON c.id=ic.category_id WHERE ic.item_id=? ORDER BY c.name').all(id),
    tags: db.prepare('SELECT t.id,t.name FROM item_tags it JOIN tags t ON t.id=it.tag_id WHERE it.item_id=? ORDER BY t.name').all(id),
    location: item.location_id ? db.prepare('SELECT id,name,parent_id AS parentId FROM locations WHERE id=?').get(item.location_id) : null,
-   imageUrl: item.image_id ? `/api/items/${id}/image` : null, thumbnailUrl: item.image_id ? `/api/items/${id}/thumbnail` : null };
+   imageUrl: item.image_id ? `/api/items/${id}/image?v=${item.image_id}` : null, thumbnailUrl: item.image_id ? `/api/items/${id}/thumbnail?v=${item.image_id}` : null };
 }
 const itemSchema = z.object({ spaceId: z.number().int().positive(), title: z.string().trim().min(1).max(160), description: z.string().max(10000).optional(), clientId:z.string().max(100).optional(),
  categoryIds: z.array(z.number().int().positive()).max(100).optional(), tagIds: z.array(z.number().int().positive()).max(100).optional(), locationId: z.number().int().positive().nullable().optional(),
@@ -239,10 +239,12 @@ app.post('/api/items/:id/image', auth, upload.single('image'), async (req,res) =
 });
 async function removeMedia(id) { if(!id) return; await Promise.allSettled(['webp','jpg','png','avif'].map(format=>fs.unlink(path.join(DATA_DIR,'media',`${id}.${format}`))).concat([fs.unlink(path.join(DATA_DIR,'media',`${id}-thumb.webp`))])); }
 async function serveImage(req,res,thumb) {
- const item=getItem(req.params.id,true); if(!item?.imageId) return res.sendStatus(404);
- if(!canAccessSpace(item.spaceId,req.user.id)) return res.sendStatus(404);
+ const item=getItem(req.params.id,true); if(!item) { console.warn('Image request references a missing item.'); return res.sendStatus(404); }
+ if(!item.imageId) { console.warn('Image request references an item without an image.'); return res.sendStatus(404); }
+ if(!canAccessSpace(item.spaceId,req.user.id)) { console.warn('Image request denied for private space.'); return res.sendStatus(404); }
  const format=thumb?'webp':item.imageFormat||'webp';const filename=path.join(DATA_DIR,'media',`${item.imageId}${thumb?'-thumb':`.${format}`}`);
- res.set('Cache-Control','private, max-age=86400, stale-while-revalidate=604800'); res.type(format==='jpg'?'image/jpeg':`image/${format}`); res.sendFile(filename,err=>{if(err&&!res.headersSent) res.sendStatus(404);});
+ try { await fs.access(filename); } catch { console.warn(`Image file missing (${thumb?'thumbnail':'original'}).`); return res.sendStatus(404); }
+ res.set('Cache-Control','private, max-age=86400, stale-while-revalidate=604800'); res.type(format==='jpg'?'image/jpeg':`image/${format}`); res.sendFile(filename,err=>{if(err&&!res.headersSent){console.warn(`Image delivery failed (${thumb?'thumbnail':'original'}).`);res.sendStatus(404);}});
 }
 app.get('/api/items/:id/image',auth,(req,res)=>serveImage(req,res,false));
 app.get('/api/items/:id/thumbnail',auth,(req,res)=>serveImage(req,res,true));
