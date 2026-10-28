@@ -305,6 +305,19 @@ h1, h2, p { margin-top: 0; }
 .deleted-space-row strong, .deleted-space-row small { display: block; }
 .deleted-space-row small { margin-top: 4px; color: var(--muted); font-size: 12px; }
 .deleted-space-row .outline { flex: 0 0 auto; }
+.admin-users-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.admin-users-heading .outline { flex: 0 0 auto; min-height: 40px; padding: 6px 10px; font-size: 12px; }
+.admin-users-total { margin: -4px 0 10px; }
+.admin-users-list { display: grid; }
+.admin-user-row { display: grid; min-width: 0; gap: 5px; padding: 12px 0; border-top: 1px solid #eee7da; }
+.admin-user-name { display: flex; min-width: 0; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.admin-user-name strong { font-family: 'Shippori Mincho', serif; font-size: 16px; }
+.admin-user-name > span { padding: 2px 7px; border-radius: 99px; background: #f3ded8; color: #9e3526; font-size: 10px; font-weight: 700; }
+.admin-user-row > small { color: var(--muted); font-size: 12px; }
+.admin-user-stats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
+.admin-user-stats span { padding: 4px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.admin-users-error { color: #9e3526; font-size: 13px; }
+.admin-users-error p { margin-bottom: 2px; }
 
 .list-view { grid-template-columns: minmax(0, 1fr); gap: 9px; }
 .list-view .item-card { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: stretch; }

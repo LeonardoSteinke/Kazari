@@ -86,6 +86,20 @@ app.post('/api/invites', auth, admin, (req, res) => {
  res.status(201).json({ code, expiresAt });
 });
 app.get('/api/invites', auth, admin, (_req, res) => res.json(db.prepare("SELECT id,expires_at AS expiresAt,used_at AS usedAt FROM invites ORDER BY id DESC LIMIT 100").all()));
+app.get('/api/admin/users',auth,admin,(_req,res)=>res.json(db.prepare(`
+ SELECT u.id,u.username,CASE WHEN u.is_admin=1 THEN 1 ELSE 0 END AS isAdmin,
+  u.created_at AS createdAt,
+  COUNT(DISTINCT CASE WHEN s.deleted_at IS NULL THEN s.id END) AS ownedSpaces,
+  COUNT(DISTINCT CASE WHEN sm.space_id IS NOT NULL AND shared.deleted_at IS NULL THEN sm.space_id END) AS sharedSpaces,
+  COUNT(DISTINCT CASE WHEN s.deleted_at IS NULL AND i.deleted_at IS NULL THEN i.id END) AS activeItems
+ FROM users u
+ LEFT JOIN spaces s ON s.owner_id=u.id
+ LEFT JOIN items i ON i.space_id=s.id
+ LEFT JOIN space_members sm ON sm.user_id=u.id
+ LEFT JOIN spaces shared ON shared.id=sm.space_id
+ GROUP BY u.id
+ ORDER BY u.created_at DESC,u.username COLLATE NOCASE
+`).all().map(row=>({...row,isAdmin:!!row.isAdmin}))));
 
 app.get('/api/spaces', auth, (req, res) => res.json(db.prepare(`
  SELECT * FROM (
