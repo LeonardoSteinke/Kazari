@@ -58,42 +58,53 @@ cd web && npm ci && npm run dev
 
 O frontend Vite usa proxy de `/api` para `localhost:3000`.
 
-## Homelab e `kazari.lab`
+## Homelab e `kazari.mockingbird.com.br`
 
-O wildcard `*.lab` do Pi-hole resolve para o IP Tailscale do host. O Compose
-conecta o container à rede `media_server_media_net`, sem publicar porta no
-host. A rota `kazari.lab` está em
-`config/nginx-proxy/conf.d/projects.conf`; o serviço não recebe rota no
-Cloudflare Tunnel. [`deploy/nginx-kazari.conf`](deploy/nginx-kazari.conf)
-documenta o bloco do proxy.
+O hostname resolve para o IP Tailscale do host (`100.93.88.105`) por um
+registro DNS only no Cloudflare. O tráfego não passa pelo Cloudflare Tunnel e o
+serviço não publica portas próprias; continua acessível apenas pela LAN/VPN. A
+rota HTTPS está em `config/nginx-proxy/conf.d/projects.conf`.
 
-O nginx do homelab usa uma CA privada exclusiva do Kazari, guardada em
-`config/nginx-proxy/ssl/kazari/` (fora do Git). Instale
-`ca.crt` como certificado raiz confiável no celular; no iOS também é necessário
-habilitar a confiança total do certificado. O HTTPS é necessário para instalação
-PWA, service worker e câmera. O endereço continua privado na VPN.
-
-Antes do primeiro deploy:
+O certificado público é emitido pela Let's Encrypt usando validação DNS-01 do
+Cloudflare. Isso valida o domínio sem expor o app ou abrir portas para a
+internet. Para emitir e renovar, crie um API Token Cloudflare limitado à zona
+`mockingbird.com.br`, com permissões `Zone:DNS:Edit` e `Zone:Zone:Read`, salve-o
+em `deploy/cloudflare.env` conforme `deploy/cloudflare.env.example` e execute:
 
 ```sh
-cp .env.example .env
-openssl rand -hex 32   # definir JWT_SECRET
-openssl rand -hex 24   # definir MASTER_CODE
-mkdir -p data/media data/backups
+./deploy/renew-cloudflare-cert.sh
 ```
 
-O container roda como UID 1000 (`node`); assegure que `data/` pertença ao UID
-1000 antes de subir. Depois configure os segredos em `.env` e execute:
+O script usa acme.sh em container temporário e grava o certificado em
+`config/nginx-proxy/ssl/kazari-public/` (ignorado pelo Git). Após a primeira
+emissão, configure a rota HTTPS do nginx com
+[`deploy/nginx-kazari.conf`](deploy/nginx-kazari.conf) e recarregue o proxy.
+Agende a execução diária no host para renovar automaticamente; o script valida
+a configuração e recarrega o nginx após instalar o certificado. Não envie o
+arquivo de token, certificados ou chaves ao GitHub.
+
+Exemplo de cron (ajuste o caminho absoluto do checkout):
+
+```cron
+17 4 * * * /home/leo/workspace/Media_Server/projects/kazari/deploy/renew-cloudflare-cert.sh >> /home/leo/workspace/Media_Server/projects/kazari/data/certificate-renewal.log 2>&1
+```
+
+Antes da emissão inicial, o registro DNS `kazari.mockingbird.com.br` precisa
+apontar para `100.93.88.105` e estar como **DNS only** (nuvem cinza), não
+proxied. O wildcard DNS atual já resolve para esse endereço.
+
+Antes do primeiro deploy, configure os segredos locais em `.env` e execute:
 
 ```sh
+mkdir -p data/media data/backups
 docker compose up -d --build
 docker compose logs -f
 ```
 
-Primeiro cadastro em `https://kazari.lab` usa `MASTER_CODE` e vira administrador.
-Essa conta gera convites em **Ajustes**. Cada convite é exibido uma vez, vale
-sete dias e cria uma conta. Os espaços e as respectivas imagens permanecem
-privados para a conta que os criou.
+Primeiro cadastro em `https://kazari.mockingbird.com.br` usa `MASTER_CODE` e
+vira administrador. Essa conta gera convites em **Ajustes**. Cada convite é
+exibido uma vez, vale sete dias e cria uma conta. Os espaços e as respectivas
+imagens permanecem privados para a conta que os criou.
 
 ### Dados e cópias de segurança
 

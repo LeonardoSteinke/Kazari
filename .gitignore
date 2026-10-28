@@ -13,6 +13,7 @@ data/
 *.pfx
 *.crt
 *.cert
+deploy/cloudflare.env
 npm-debug.log*
 .DS_Store
 
