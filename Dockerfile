@@ -1,14 +1,13 @@
-FROM node:22-alpine AS web
+FROM node:20-slim AS web
 WORKDIR /web
 COPY web/package*.json ./
 RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-FROM node:22-alpine AS runtime
+FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache vips
 COPY server/package*.json ./
 RUN npm ci --omit=dev
 COPY server/ ./

@@ -3,7 +3,16 @@ dist/
 web/dist/
 *.tsbuildinfo
 data/
-.env
+.env*
+!.env.example
+*.db
+*.db-*
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cert
 npm-debug.log*
 .DS_Store
 
