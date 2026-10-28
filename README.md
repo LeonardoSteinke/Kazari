@@ -60,16 +60,18 @@ O frontend Vite usa proxy de `/api` para `localhost:3000`.
 
 ## Homelab e `kazari.lab`
 
-O wildcard `*.lab` do Pi-hole já resolve para o IP Tailscale do host. O Compose
+O wildcard `*.lab` do Pi-hole resolve para o IP Tailscale do host. O Compose
 conecta o container à rede `media_server_media_net`, sem publicar porta no
-host. Configure o proxy usando [`deploy/nginx-kazari.conf`](deploy/nginx-kazari.conf)
-e recarregue o nginx. Esse hostname não deve receber rota no Cloudflare Tunnel.
+host. A rota `kazari.lab` está em
+`config/nginx-proxy/conf.d/projects.conf`; o serviço não recebe rota no
+Cloudflare Tunnel. [`deploy/nginx-kazari.conf`](deploy/nginx-kazari.conf)
+documenta o bloco do proxy.
 
-O bloco fornecido usa um certificado privado para `kazari.lab`. Gere-o com uma
-CA local confiável nos celulares (por exemplo, mkcert instalado nos dispositivos)
-ou adapte os caminhos para a sua CA interna. O certificado deve conter
-`kazari.lab` no SAN e a CA deve ser confiável no aparelho. O HTTPS é necessário
-para instalação PWA, service worker e câmera; o endereço segue privado na VPN.
+O nginx do homelab usa uma CA privada exclusiva do Kazari, guardada em
+`config/nginx-proxy/ssl/kazari/` (fora do Git). Instale
+`ca.crt` como certificado raiz confiável no celular; no iOS também é necessário
+habilitar a confiança total do certificado. O HTTPS é necessário para instalação
+PWA, service worker e câmera. O endereço continua privado na VPN.
 
 Antes do primeiro deploy:
 
