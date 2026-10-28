@@ -43,7 +43,7 @@ function InstallPrompt(){const [mobile,setMobile]=useState(false);const [install
 }
 
 function App(){
- const [user,setUser]=useState<User|null>(null); const [spaces,setSpaces]=useState<Space[]>([]); const [spaceId,setSpaceId]=useState<number|null>(null);
+ const [user,setUser]=useState<User|null>(null); const [spaces,setSpaces]=useState<Space[]>([]); const [spaceId,setSpaceId]=useState<number|null>(null);const [spacesReady,setSpacesReady]=useState(false);const [spacesLoadError,setSpacesLoadError]=useState('');const [spacesRetry,setSpacesRetry]=useState(0);
  const [items,setItems]=useState<Item[]>([]); const [trash,setTrash]=useState<Item[]>([]); const [meta,setMeta]=useState<Meta>(blankMeta);
  const [tab,setTab]=useState<Tab>('catalog'); const [query,setQuery]=useState(''); const [filterCat,setFilterCat]=useState(''); const [filterTag,setFilterTag]=useState(''); const [filterLoc,setFilterLoc]=useState('');
  const [filtersOpen,setFiltersOpen]=useState(false);const [catalogView,setCatalogView]=useState<'cards'|'list'>(()=>{try{return localStorage.getItem('kazari:catalog-view')==='list'?'list':'cards';}catch{return 'cards';}});
@@ -67,7 +67,7 @@ function App(){
  useEffect(()=>{let active=true;if(tab!=='settings'||!spaceId||currentSpace?.role!=='owner'){setMembers([]);setDeletedSpaces([]);return;}Promise.all([api<SpaceMember[]>(`/api/spaces/${spaceId}/members`),api<DeletedSpace[]>('/api/spaces/deleted')]).then(([rows,deleted])=>{if(active){setMembers(rows);setDeletedSpaces(deleted);}}).catch(e=>{if(active)notify(errorMessage(e));});return()=>{active=false;};},[tab,spaceId,currentSpace?.role]);
 
  useEffect(()=>{let alive=true;(async()=>{try{const result=await api<{user:User}>('/api/auth/me');if(!alive)return;localStorage.setItem('kazari:last-user',String(result.user.id));await cacheUser(result.user);setUser(result.user);}catch{const id=Number(localStorage.getItem('kazari:last-user'));const cached=await cachedUser(id);if(alive&&cached){setUser(cached);setOffline(true);}}})();return()=>{alive=false;};},[]);
- useEffect(()=>{if(!user||tab!=='catalog')return;let alive=true;(async()=>{try{const rows=await api<Space[]>('/api/spaces');if(!alive)return;setSpaces(rows);await cacheSpaces(user.id,rows);const requested=Number(new URLSearchParams(location.search).get('space'));const chosen=rows.find(s=>s.id===requested)?.id||rows.find(s=>s.id===spaceId)?.id||rows[0]?.id||null;setSpaceId(chosen);}catch{const rows=await cachedSpaces(user.id) as Space[];if(alive){setSpaces(rows);setSpaceId(rows.find(s=>s.id===spaceId)?.id||rows[0]?.id||null);setOffline(true);}}})();return()=>{alive=false;};},[user?.id,tab]);
+ useEffect(()=>{if(!user||tab!=='catalog')return;let alive=true;setSpacesReady(false);setSpacesLoadError('');(async()=>{try{const rows=await api<Space[]>('/api/spaces');if(!alive)return;setSpaces(rows);const requested=Number(new URLSearchParams(location.search).get('space'));const chosen=rows.find(s=>s.id===requested)?.id||rows.find(s=>s.id===spaceId)?.id||rows[0]?.id||null;setSpaceId(chosen);setOffline(false);void cacheSpaces(user.id,rows).catch(()=>{});}catch{let rows:Space[]=[];try{rows=await cachedSpaces(user.id) as Space[];}catch{}if(!alive)return;setSpaces(rows);setSpaceId(rows.find(s=>s.id===spaceId)?.id||rows[0]?.id||null);setOffline(true);if(!rows.length)setSpacesLoadError('Não foi possível carregar seus espaços. Verifique a conexão e tente novamente.');}finally{if(alive)setSpacesReady(true);}})();return()=>{alive=false;};},[user?.id,tab,spacesRetry]);
 
  const loadCatalog=useCallback(async()=>{
   if(!user||!spaceId)return;
@@ -101,7 +101,7 @@ function App(){
  async function deleteSpace(){if(!currentSpace||currentSpace.role!=='owner'||deleteSpaceName!==currentSpace.name||!deleteSpaceAcknowledged)return;try{const result=await api<{deletedAt:string;restoreDays:number}>(`/api/spaces/${currentSpace.id}`,json('DELETE',{confirmName:deleteSpaceName}));const next=spaces.filter(space=>space.id!==currentSpace.id);setSpaces(next);setSpaceId(next.find(space=>space.role==='owner')?.id||next[0]?.id||null);await cacheSpaces(user!.id,next);setDeletedSpaces(rows=>[{id:currentSpace.id,name:currentSpace.name,deletedAt:result.deletedAt},...rows]);setDeleteSpaceName('');setDeleteSpaceAcknowledged(false);setTab('catalog');notify('Espaço excluído. Você pode restaurá-lo por 7 dias em Ajustes.');}catch(e){notify(errorMessage(e));}}
  async function restoreSpace(id:number){try{await api(`/api/spaces/${id}/restore`,{method:'POST'});const [active,deleted]=await Promise.all([api<Space[]>('/api/spaces'),api<DeletedSpace[]>('/api/spaces/deleted')]);setSpaces(active);setDeletedSpaces(deleted);setSpaceId(id);await cacheSpaces(user!.id,active);setTab('catalog');notify('Espaço restaurado com todo o conteúdo.');}catch(e){notify(errorMessage(e));}}
 
- async function signOut(){try{await api('/api/auth/logout',{method:'POST'});}catch{}localStorage.removeItem('kazari:last-user');setUser(null);setSpaces([]);setSpaceId(null);setItems([]);setMeta(blankMeta);}
+ async function signOut(){try{await api('/api/auth/logout',{method:'POST'});}catch{}localStorage.removeItem('kazari:last-user');setUser(null);setSpaces([]);setSpaceId(null);setSpacesReady(false);setSpacesLoadError('');setItems([]);setMeta(blankMeta);}
  async function saveItem(data:any,file:File|null,mode:string){
   if(!user||!spaceId)return;setBusy(true);
   try{
@@ -134,6 +134,8 @@ function App(){
  const categoryOptions=useMemo(()=>meta.categories,[meta.categories]);
  const activeFilterCount=[filterCat,filterTag,filterLoc].filter(Boolean).length;
  if(!user)return <Login onLogin={setUser}/>;
+ if(!spacesReady)return <main className="empty-space"><img className="auth-brand-image" src="/brand/header.svg" alt="Kazari"/><p>Carregando seus espaços…</p></main>;
+ if(!spaces.length&&spacesLoadError)return <main className="empty-space"><img className="auth-brand-image" src="/brand/header.svg" alt="Kazari"/><p>{spacesLoadError}</p><button className="primary" onClick={()=>setSpacesRetry(value=>value+1)}>Tentar novamente</button><button className="text-button" onClick={signOut}>Sair</button></main>;
  if(!spaces.length)return <main className="empty-space"><img className="auth-brand-image" src="/brand/header.svg" alt="Kazari"/><p>Comece criando seu primeiro espaço pessoal.</p><form className="inline-form" onSubmit={createSpace}><input placeholder="Ex.: Casa" value={newSpace} onChange={e=>setNewSpace(e.target.value)} required/><button className="primary">Criar espaço</button></form><button className="text-button" onClick={signOut}>Sair</button></main>;
 
  return <div className="app-shell">
