@@ -10,6 +10,7 @@ export type Item = {
   id: number | string; spaceId: number; title: string; description: string; locationId: number | null;
   purchaseUrl: string; purchaseLabel: string; customValues: Record<string, unknown>; imageId: string | null;
   imageMode: string; createdAt: string; updatedAt: string; deletedAt: string | null;
+  inventory?: {favorite?:boolean;status?:'guardado'|'emprestado'|'vendido'|'descartado';borrower?:string;dueDate?:string;purchaseDate?:string;purchasePrice?:string;warrantyDate?:string;receiptUrl?:string};
   categories: { id: number; name: string; parentId: number | null; icon?: string | null }[]; tags: { id: number; name: string }[];
   location: { id: number; name: string; parentId: number | null; icon?: string | null } | null; imageUrl: string | null; thumbnailUrl: string | null;
   pending?: boolean; pendingImage?: Blob; offlineThumbnail?: Blob;

@@ -311,7 +311,7 @@ function getItem(id, includeDeleted = false) {
  if (!item) return null;
  return { id: item.id, spaceId: item.space_id, title: item.title, description: item.description, locationId: item.location_id,
    purchaseUrl: item.purchase_url, purchaseLabel: item.purchase_label, customValues: JSON.parse(item.custom_values), imageId: item.image_id, imageFormat:item.image_format,
-   imageMode: item.image_mode, createdAt: item.created_at, updatedAt: item.updated_at, deletedAt: item.deleted_at,
+   imageMode: item.image_mode, inventory:JSON.parse(item.inventory||'{}'), createdAt: item.created_at, updatedAt: item.updated_at, deletedAt: item.deleted_at,
    categories: db.prepare('SELECT c.id,c.name,c.parent_id AS parentId,c.icon FROM item_categories ic JOIN categories c ON c.id=ic.category_id WHERE ic.item_id=? ORDER BY c.name').all(id),
    tags: db.prepare('SELECT t.id,t.name FROM item_tags it JOIN tags t ON t.id=it.tag_id WHERE it.item_id=? ORDER BY t.name').all(id),
    location: item.location_id ? db.prepare('SELECT id,name,parent_id AS parentId,icon FROM locations WHERE id=?').get(item.location_id) : null,
@@ -324,11 +324,12 @@ function getItemPage(rows) {
  const tags=db.prepare(`SELECT it.item_id AS itemId,t.id,t.name FROM item_tags it JOIN tags t ON t.id=it.tag_id WHERE it.item_id IN (${marks}) ORDER BY t.name`).all(...ids);
  const categoryMap=new Map(),tagMap=new Map();for(const entry of categories){const list=categoryMap.get(entry.itemId)||[];list.push({id:entry.id,name:entry.name,parentId:entry.parentId,icon:entry.icon});categoryMap.set(entry.itemId,list);}for(const entry of tags){const list=tagMap.get(entry.itemId)||[];list.push({id:entry.id,name:entry.name});tagMap.set(entry.itemId,list);}
  const locationIds=[...new Set(rows.map(row=>row.location_id).filter(Boolean))];const locations=new Map();if(locationIds.length){const q=locationIds.map(()=>'?').join(',');for(const entry of db.prepare(`SELECT id,name,parent_id AS parentId,icon FROM locations WHERE id IN (${q})`).all(...locationIds))locations.set(entry.id,entry);}
- return rows.map(item=>({id:item.id,spaceId:item.space_id,title:item.title,description:item.description,locationId:item.location_id,purchaseUrl:item.purchase_url,purchaseLabel:item.purchase_label,customValues:JSON.parse(item.custom_values),imageId:item.image_id,imageFormat:item.image_format,imageMode:item.image_mode,createdAt:item.created_at,updatedAt:item.updated_at,deletedAt:item.deleted_at,categories:categoryMap.get(item.id)||[],tags:tagMap.get(item.id)||[],location:item.location_id?locations.get(item.location_id)||null:null,imageUrl:item.image_id?`/api/items/${item.id}/image?v=${item.image_id}`:null,thumbnailUrl:item.image_id?`/api/items/${item.id}/thumbnail?v=${item.image_id}`:null}));
+ return rows.map(item=>({id:item.id,spaceId:item.space_id,title:item.title,description:item.description,locationId:item.location_id,purchaseUrl:item.purchase_url,purchaseLabel:item.purchase_label,customValues:JSON.parse(item.custom_values),imageId:item.image_id,imageFormat:item.image_format,imageMode:item.image_mode,inventory:JSON.parse(item.inventory||'{}'),createdAt:item.created_at,updatedAt:item.updated_at,deletedAt:item.deleted_at,categories:categoryMap.get(item.id)||[],tags:tagMap.get(item.id)||[],location:item.location_id?locations.get(item.location_id)||null:null,imageUrl:item.image_id?`/api/items/${item.id}/image?v=${item.image_id}`:null,thumbnailUrl:item.image_id?`/api/items/${item.id}/thumbnail?v=${item.image_id}`:null}));
 }
+const inventorySchema=z.object({favorite:z.boolean().optional(),status:z.enum(['guardado','emprestado','vendido','descartado']).optional(),borrower:z.string().max(120).optional(),dueDate:z.string().max(10).optional(),purchaseDate:z.string().max(10).optional(),purchasePrice:z.string().max(40).optional(),warrantyDate:z.string().max(10).optional(),receiptUrl:z.string().max(2048).optional().refine(v=>!v||/^https?:\/\//i.test(v))});
 const itemSchema = z.object({ spaceId: z.number().int().positive(), title: z.string().trim().min(1).max(160), description: z.string().max(10000).optional(), clientId:z.string().max(100).optional(),
  categoryIds: z.array(z.number().int().positive()).max(100).optional(), tagIds: z.array(z.number().int().positive()).max(100).optional(), locationId: z.number().int().positive().nullable().optional(),
- purchaseUrl: z.string().max(2048).optional().refine(v => !v || /^https?:\/\//i.test(v), 'URL deve começar com http:// ou https://'), purchaseLabel: z.string().max(100).optional(), customValues: z.record(z.string(),z.unknown()).optional() });
+ purchaseUrl: z.string().max(2048).optional().refine(v => !v || /^https?:\/\//i.test(v), 'URL deve começar com http:// ou https://'), purchaseLabel: z.string().max(100).optional(), customValues: z.record(z.string(),z.unknown()).optional(),inventory:inventorySchema.optional() });
 function saveRelations(itemId, spaceId, data) {
  const cats = data.categoryIds || []; const tags = data.tagIds || [];
  if (cats.length && db.prepare(`SELECT COUNT(*) n FROM categories WHERE space_id=? AND id IN (${cats.map(() => '?').join(',')})`).get(spaceId, ...cats).n !== new Set(cats).size) throw new Error('Uma ou mais categorias não pertencem a este espaço.');
@@ -367,23 +368,37 @@ app.get('/api/items/:id',auth,(req,res)=>{
  if(!canAccessSpace(item.spaceId,req.user.id))return fail(res,'Item não encontrado.',404);
  res.json(item);
 });
+app.get('/api/spaces/:id/export',auth,(req,res)=>{
+ const sid=parseId(req.params.id);if(!sid||!canAccessSpace(sid,req.user.id))return fail(res,'Espaço não encontrado.',404);
+ const space=db.prepare('SELECT id,name FROM spaces WHERE id=?').get(sid);
+ const rows=db.prepare('SELECT * FROM items WHERE space_id=? AND deleted_at IS NULL ORDER BY id').all(sid);
+ const items=[];for(let offset=0;offset<rows.length;offset+=100)items.push(...getItemPage(rows.slice(offset,offset+100)));
+ const data={format:'kazari-export-v1',exportedAt:new Date().toISOString(),space,items,categories:db.prepare('SELECT id,name,parent_id AS parentId,icon FROM categories WHERE space_id=? ORDER BY id').all(sid),locations:db.prepare('SELECT id,name,parent_id AS parentId,icon FROM locations WHERE space_id=? ORDER BY id').all(sid),tags:db.prepare('SELECT id,name FROM tags WHERE space_id=? ORDER BY id').all(sid),fields:db.prepare('SELECT id,name,type,options FROM custom_fields WHERE space_id=? ORDER BY position,id').all(sid).map(field=>({...field,options:JSON.parse(field.options)}))};
+ res.set('Cache-Control','no-store');
+ if(req.query.format==='csv'){
+  const cell=value=>{let text=String(value??'');if(/^[\s]*[=+@-]/.test(text))text="'"+text;return `"${text.replace(/"/g,'""')}"`;};
+  const columns=['Nome','Descrição','Categorias','Tags','Localização','Link de compra'];const lines=[columns.map(cell).join(',')];for(const item of items)lines.push([item.title,item.description,item.categories.map(c=>c.name).join('; '),item.tags.map(t=>t.name).join('; '),item.location?.name,item.purchaseUrl].map(cell).join(','));
+  res.type('text/csv; charset=utf-8').set('Content-Disposition','attachment; filename="kazari-inventario.csv"');return res.send('\ufeff'+lines.join('\r\n'));
+ }
+ res.set('Content-Disposition','attachment; filename="kazari-inventario.json"').json(data);
+});
 app.post('/api/items', auth, (req, res) => {
  const parsed = itemSchema.safeParse(req.body); if (!parsed.success) return fail(res, parsed.error.issues[0]?.message || 'Dados do item inválidos.');
  const d = parsed.data; if (!canAccessSpace(d.spaceId, req.user.id, true)) return fail(res, 'Sem permissão para editar este espaço.', 403);
  if(d.clientId){const previous=db.prepare('SELECT id FROM items WHERE sync_id=? AND created_by=?').get(d.clientId,req.user.id);if(previous)return res.json(getItem(previous.id,true));}
  try {
-  const create = db.transaction(() => { const r = db.prepare(`INSERT INTO items(space_id,title,description,location_id,purchase_url,purchase_label,custom_values,created_by,updated_by,sync_id) VALUES(?,?,?,?,?,?,?,?,?,?)`).run(d.spaceId,d.title,d.description||'',d.locationId||null,d.purchaseUrl||'',d.purchaseLabel||'',JSON.stringify(d.customValues||{}),req.user.id,req.user.id,d.clientId||null); saveRelations(r.lastInsertRowid,d.spaceId,d); return Number(r.lastInsertRowid); });
+  const create = db.transaction(() => { const r = db.prepare(`INSERT INTO items(space_id,title,description,location_id,purchase_url,purchase_label,custom_values,created_by,updated_by,sync_id,inventory) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).run(d.spaceId,d.title,d.description||'',d.locationId||null,d.purchaseUrl||'',d.purchaseLabel||'',JSON.stringify(d.customValues||{}),req.user.id,req.user.id,d.clientId||null,JSON.stringify(d.inventory||{})); saveRelations(r.lastInsertRowid,d.spaceId,d); return Number(r.lastInsertRowid); });
   res.status(201).json(getItem(create()));
  } catch(e) { fail(res, e.message); }
 });
 app.patch('/api/items/:id', auth, (req, res) => {
  const existing = getItem(req.params.id); if (!existing) return fail(res, 'Item não encontrado.', 404);
  if (!canAccessSpace(existing.spaceId, req.user.id, true)) return fail(res, 'Sem permissão.', 403);
- const patch = z.object({ title: z.string().trim().min(1).max(160).optional(), description: z.string().max(10000).optional(), categoryIds: z.array(z.number().int().positive()).max(100).optional(), tagIds: z.array(z.number().int().positive()).max(100).optional(), locationId: z.number().int().positive().nullable().optional(), purchaseUrl: z.string().max(2048).optional().refine(v => !v || /^https?:\/\//i.test(v)), purchaseLabel: z.string().max(100).optional(), customValues: z.record(z.string(),z.unknown()).optional(), baseUpdatedAt:z.string().optional(), force:z.boolean().optional() }).safeParse(req.body);
+ const patch = z.object({ title: z.string().trim().min(1).max(160).optional(), description: z.string().max(10000).optional(), categoryIds: z.array(z.number().int().positive()).max(100).optional(), tagIds: z.array(z.number().int().positive()).max(100).optional(), locationId: z.number().int().positive().nullable().optional(), purchaseUrl: z.string().max(2048).optional().refine(v => !v || /^https?:\/\//i.test(v)), purchaseLabel: z.string().max(100).optional(), customValues: z.record(z.string(),z.unknown()).optional(), inventory:inventorySchema.optional(), baseUpdatedAt:z.string().optional(), force:z.boolean().optional() }).safeParse(req.body);
  if (!patch.success) return fail(res, patch.error.issues[0]?.message || 'Dados inválidos.');
  const d = patch.data;
  if(d.baseUpdatedAt&&d.baseUpdatedAt!==existing.updatedAt&&!d.force)return res.status(409).json({error:'Este item foi alterado por outra pessoa. Revise as versões antes de salvar.',current:existing});
- try { const save = db.transaction(() => { const stamp=new Date().toISOString().replace('T',' ').replace('Z','');db.prepare(`UPDATE items SET title=?,description=?,location_id=?,purchase_url=?,purchase_label=?,custom_values=?,updated_by=?,updated_at=? WHERE id=?`).run(d.title ?? existing.title,d.description ?? existing.description,d.locationId === undefined ? existing.locationId : d.locationId,d.purchaseUrl ?? existing.purchaseUrl,d.purchaseLabel ?? existing.purchaseLabel,JSON.stringify(d.customValues ?? existing.customValues),req.user.id,stamp,existing.id); if (d.categoryIds || d.tagIds || d.locationId !== undefined || d.customValues) saveRelations(existing.id,existing.spaceId,{ categoryIds:d.categoryIds ?? existing.categories.map(x=>x.id),tagIds:d.tagIds ?? existing.tags.map(x=>x.id),locationId:d.locationId === undefined ? existing.locationId : d.locationId,customValues:d.customValues ?? existing.customValues }); }); save(); res.json(getItem(existing.id)); }
+ try { const save = db.transaction(() => { const stamp=new Date().toISOString().replace('T',' ').replace('Z','');db.prepare(`UPDATE items SET title=?,description=?,location_id=?,purchase_url=?,purchase_label=?,custom_values=?,inventory=?,updated_by=?,updated_at=? WHERE id=?`).run(d.title ?? existing.title,d.description ?? existing.description,d.locationId === undefined ? existing.locationId : d.locationId,d.purchaseUrl ?? existing.purchaseUrl,d.purchaseLabel ?? existing.purchaseLabel,JSON.stringify(d.customValues ?? existing.customValues),JSON.stringify(d.inventory??existing.inventory),req.user.id,stamp,existing.id); if (d.categoryIds || d.tagIds || d.locationId !== undefined || d.customValues) saveRelations(existing.id,existing.spaceId,{ categoryIds:d.categoryIds ?? existing.categories.map(x=>x.id),tagIds:d.tagIds ?? existing.tags.map(x=>x.id),locationId:d.locationId === undefined ? existing.locationId : d.locationId,customValues:d.customValues ?? existing.customValues }); }); save(); res.json(getItem(existing.id)); }
  catch(e) { fail(res,e.message); }
 });
 app.delete('/api/items/:id', auth, (req, res) => {

@@ -85,6 +85,7 @@ if (!db.prepare('PRAGMA table_info(items)').all().some(column => column.name ===
 if (!db.prepare('PRAGMA table_info(items)').all().some(column => column.name === 'image_format')) {
   db.exec("ALTER TABLE items ADD COLUMN image_format TEXT NOT NULL DEFAULT 'webp'");
 }
+if (!db.prepare('PRAGMA table_info(items)').all().some(column => column.name === 'inventory')) db.exec("ALTER TABLE items ADD COLUMN inventory TEXT NOT NULL DEFAULT '{}'");
 if (!db.prepare('PRAGMA table_info(spaces)').all().some(column => column.name === 'deleted_at')) {
   db.exec('ALTER TABLE spaces ADD COLUMN deleted_at TEXT');
 }
