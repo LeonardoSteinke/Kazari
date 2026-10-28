@@ -2,6 +2,7 @@ const CHECK_MS = 15 * 60 * 1000;
 const RELOAD_KEY = 'kazari:reloaded-at';
 const RELOAD_COOLDOWN_MS = 60 * 1000;
 let reloadInProgress = false;
+let updateReady = false;
 
 async function forceReload(): Promise<void> {
   if (reloadInProgress) return;
@@ -27,6 +28,14 @@ async function forceReload(): Promise<void> {
 
 async function compareBuild(build: string | null): Promise<void> {
   if (import.meta.env.DEV || !build || build === 'dev' || build === __BUILD_ID__) return;
+  if (updateReady) return;
+  updateReady = true;
+  window.dispatchEvent(new CustomEvent('kazari:update-ready'));
+}
+
+/** Reload once the interface has no open editor or unsent local changes. */
+export async function applyPendingVersionUpdate(): Promise<void> {
+  if (!updateReady) return;
   await forceReload();
 }
 

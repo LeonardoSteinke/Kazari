@@ -39,11 +39,17 @@ function auth(req, res, next) {
    const token = req.cookies.kazari_session;
    if (!token) return res.status(401).json({ error: 'Entre na sua conta para continuar.' });
    req.user = jwt.verify(token, SECRET);
+   const account=db.prepare('SELECT is_admin,disabled_at FROM users WHERE id=?').get(req.user.id);
+   if (!account || account.disabled_at) {
+     res.clearCookie('kazari_session', { path: '/' });
+     return res.status(403).json({ error: 'Esta conta está desativada.' });
+   }
+   req.user.admin=!!account.is_admin;
    next();
  } catch { res.clearCookie('kazari_session', { path: '/' }); res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' }); }
 }
 function admin(req, res, next) { if (!req.user?.admin) return res.status(403).json({ error: 'Apenas a conta master pode fazer isso.' }); next(); }
-const userView = (u) => ({ id: u.id, username: u.username, isAdmin: !!u.is_admin });
+const userView = (u) => ({ id: u.id, username: u.username, isAdmin: !!u.is_admin, disabled: !!u.disabled_at });
 const parseId = (v) => Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null;
 function fail(res, message, status = 400) { return res.status(status).json({ error: message }); }
 const registerLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, handler: (_req, res) => fail(res, 'Muitas tentativas de cadastro. Aguarde 15 minutos e tente novamente.', 429) });
@@ -63,7 +69,7 @@ app.post('/api/auth/register', registerLimiter, asyncHandler(async (req, res) =>
    let isAdmin=false;
    if(isFirst){if(!process.env.MASTER_CODE||code!==process.env.MASTER_CODE)throw Object.assign(new Error('INVALID_MASTER'),{code:'INVALID_MASTER'});isAdmin=true;}
    else {const invite=db.prepare('SELECT id FROM invites WHERE code_hash=? AND used_at IS NULL AND expires_at>?').get(hashCode(code),new Date().toISOString());if(!invite)throw Object.assign(new Error('INVALID_INVITE'),{code:'INVALID_INVITE'});db.prepare('UPDATE invites SET used_at=? WHERE id=? AND used_at IS NULL').run(new Date().toISOString(),invite.id);}
-   const result=db.prepare('INSERT INTO users(username,password_hash,is_admin) VALUES(?,?,?)').run(username,passwordHash,Number(isAdmin));
+  const result=db.prepare('INSERT INTO users(username,password_hash,is_admin,last_login_at) VALUES(?,?,?,CURRENT_TIMESTAMP)').run(username,passwordHash,Number(isAdmin));
    return {id:Number(result.lastInsertRowid),username,admin:isAdmin};
   }).immediate();
  }catch(e){if(e.code==='DUPLICATE_USER'||String(e.message).includes('UNIQUE constraint failed: users.username'))return fail(res,'Esse nome de usuário já está em uso.',409);if(e.code==='INVALID_MASTER')return fail(res,'Código master inválido.',403);if(e.code==='INVALID_INVITE')return fail(res,'Código de convite inválido, expirado ou já utilizado.',403);throw e;}
@@ -74,6 +80,8 @@ app.post('/api/auth/login', loginLimiter, asyncHandler(async (req, res) => {
  if (typeof username !== 'string' || typeof password !== 'string') return fail(res, 'Informe usuário e senha.', 400);
  const row = db.prepare('SELECT * FROM users WHERE username=? COLLATE NOCASE').get(username.trim());
  if (!row || !(await bcrypt.compare(password, row.password_hash))) return fail(res, 'Usuário ou senha incorretos.', 401);
+ if (row.disabled_at) return fail(res,'Esta conta está desativada. Fale com o administrador.',403);
+ db.prepare('UPDATE users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?').run(row.id);
  const user = { id: row.id, username: row.username, admin: !!row.is_admin };
  res.cookie('kazari_session', jwt.sign(user, SECRET, { expiresIn: '30d' }), tokenCookie(req)); res.json({ user: userView(row) });
 }));
@@ -86,9 +94,10 @@ app.post('/api/invites', auth, admin, (req, res) => {
  res.status(201).json({ code, expiresAt });
 });
 app.get('/api/invites', auth, admin, (_req, res) => res.json(db.prepare("SELECT id,expires_at AS expiresAt,used_at AS usedAt FROM invites ORDER BY id DESC LIMIT 100").all()));
-app.get('/api/admin/users',auth,admin,(_req,res)=>res.json(db.prepare(`
+app.get('/api/admin/users',auth,admin,asyncHandler(async (_req,res)=>{
+ const rows=db.prepare(`
  SELECT u.id,u.username,CASE WHEN u.is_admin=1 THEN 1 ELSE 0 END AS isAdmin,
-  u.created_at AS createdAt,
+  u.created_at AS createdAt,u.last_login_at AS lastLoginAt,u.disabled_at AS disabledAt,
   COUNT(DISTINCT CASE WHEN s.deleted_at IS NULL THEN s.id END) AS ownedSpaces,
   COUNT(DISTINCT CASE WHEN sm.space_id IS NOT NULL AND shared.deleted_at IS NULL THEN sm.space_id END) AS sharedSpaces,
   COUNT(DISTINCT CASE WHEN s.deleted_at IS NULL AND i.deleted_at IS NULL THEN i.id END) AS activeItems
@@ -99,7 +108,24 @@ app.get('/api/admin/users',auth,admin,(_req,res)=>res.json(db.prepare(`
  LEFT JOIN spaces shared ON shared.id=sm.space_id
  GROUP BY u.id
  ORDER BY u.created_at DESC,u.username COLLATE NOCASE
-`).all().map(row=>({...row,isAdmin:!!row.isAdmin}))));
+ `).all();
+ const files=db.prepare(`SELECT i.created_by AS userId,i.image_id AS imageId,i.image_format AS imageFormat
+  FROM items i JOIN spaces s ON s.id=i.space_id
+  WHERE s.deleted_at IS NULL AND i.deleted_at IS NULL AND i.image_id IS NOT NULL`).all();
+ const storage=new Map();
+ await Promise.all(files.map(async file=>{
+   try { const size=(await fs.stat(path.join(DATA_DIR,'media',`${file.imageId}.${file.imageFormat||'webp'}`))).size; storage.set(file.userId,(storage.get(file.userId)||0)+size); } catch {}
+ }));
+ res.json(rows.map(row=>({...row,isAdmin:!!row.isAdmin,disabled:!!row.disabledAt,storageBytes:storage.get(row.id)||0})));
+}));
+app.patch('/api/admin/users/:id/status',auth,admin,(req,res)=>{
+ const id=parseId(req.params.id);const disabled=z.boolean().safeParse(req.body?.disabled);
+ if(!id||!disabled.success)return fail(res,'Dados de conta inválidos.');
+ if(id===req.user.id&&disabled.data)return fail(res,'A conta administradora atual não pode desativar a si mesma.');
+ const target=db.prepare('SELECT id FROM users WHERE id=?').get(id);if(!target)return fail(res,'Conta não encontrada.',404);
+ db.prepare('UPDATE users SET disabled_at=? WHERE id=?').run(disabled.data?new Date().toISOString():null,id);
+ res.json({id,disabled:disabled.data});
+});
 
 app.get('/api/spaces', auth, (req, res) => res.json(db.prepare(`
  SELECT * FROM (
@@ -185,19 +211,31 @@ function treeRoutes(table, noun) {
    res.status(201).json({ id: Number(r.lastInsertRowid), spaceId: sid, parentId: parent, name: name.data, icon });
  });
  app.patch(`/api/${noun}/:id`, auth, (req,res)=>{
-   const id=parseId(req.params.id);const row=id&&db.prepare(`SELECT space_id AS spaceId FROM ${table} WHERE id=?`).get(id);
+   const id=parseId(req.params.id);const row=id&&db.prepare(`SELECT space_id AS spaceId,parent_id AS parentId FROM ${table} WHERE id=?`).get(id);
    if(!row)return fail(res,'Não encontrado.',404);
    if(!canAccessSpace(row.spaceId,req.user.id,true))return fail(res,'Sem permissão.',403);
    const name=req.body?.name===undefined?undefined:z.string().trim().min(1).max(100).safeParse(req.body.name);
    if(name&& !name.success)return fail(res,'Nome inválido.');
+   const hasParent=Object.prototype.hasOwnProperty.call(req.body||{},'parentId');
+   const parent=hasParent?(req.body.parentId==null?null:parseId(req.body.parentId)):row.parentId;
+   if(hasParent&&req.body.parentId!=null&&!parent)return fail(res,'Categoria ou localização pai inválida.');
+   if(parent){
+     if(parent===id)return fail(res,'Um nível não pode ser pai de si mesmo.');
+     let cursor=db.prepare(`SELECT id,parent_id AS parentId FROM ${table} WHERE id=? AND space_id=?`).get(parent,row.spaceId);
+     if(!cursor)return fail(res,'Categoria ou localização pai inválida.');
+     while(cursor?.parentId){if(cursor.parentId===id)return fail(res,'Não é possível mover um nível para dentro de um descendente.');cursor=db.prepare(`SELECT id,parent_id AS parentId FROM ${table} WHERE id=?`).get(cursor.parentId);}
+   }
    let icon;
    if(req.body?.icon!==undefined){icon=req.body.icon==null||req.body.icon===''?null:z.enum(icons).safeParse(req.body.icon).success?req.body.icon:undefined;if(icon===undefined&&req.body.icon!==null&&req.body.icon!=='')return fail(res,'Ícone inválido.');}
-   db.prepare(`UPDATE ${table} SET name=COALESCE(?,name),icon=CASE WHEN ? THEN ? ELSE icon END WHERE id=?`).run(name?.data||null,req.body?.icon!==undefined?1:0,icon??null,id);
+   db.prepare(`UPDATE ${table} SET name=COALESCE(?,name),parent_id=CASE WHEN ? THEN ? ELSE parent_id END,icon=CASE WHEN ? THEN ? ELSE icon END WHERE id=?`).run(name?.data||null,hasParent?1:0,parent,req.body?.icon!==undefined?1:0,icon??null,id);
    res.json(db.prepare(`SELECT id,space_id AS spaceId,parent_id AS parentId,name,icon FROM ${table} WHERE id=?`).get(id));
  });
  app.delete(`/api/${noun}/:id`, auth, (req, res) => {
    const row = db.prepare(`SELECT space_id FROM ${table} WHERE id=?`).get(req.params.id); if (!row) return fail(res, 'Não encontrado.', 404);
    if (!canAccessSpace(row.space_id,req.user.id,true)) return fail(res, 'Sem permissão.', 403);
+   const children=db.prepare(`SELECT COUNT(*) AS total FROM ${table} WHERE parent_id=?`).get(req.params.id).total;
+   const linked=table==='categories'?db.prepare('SELECT COUNT(*) AS total FROM item_categories WHERE category_id=?').get(req.params.id).total:db.prepare('SELECT COUNT(*) AS total FROM items WHERE location_id=? AND deleted_at IS NULL').get(req.params.id).total;
+   if(req.query.force!=='1')return res.status(409).json({error:`Esta exclusão afeta ${linked} item(ns) e ${children} subnível(is). Confirme para continuar.`,impact:{linked,children}});
    db.prepare(`DELETE FROM ${table} WHERE id=?`).run(req.params.id); res.json({ ok: true });
  });
 }
@@ -213,6 +251,17 @@ app.post('/api/tags', auth, (req, res) => {
  const r = db.prepare('INSERT INTO tags(space_id,name) VALUES(?,?) ON CONFLICT(space_id,name) DO NOTHING').run(sid, name.data);
  const row = db.prepare('SELECT id,space_id AS spaceId,name FROM tags WHERE space_id=? AND name=?').get(sid, name.data); res.status(r.changes ? 201 : 200).json(row);
 });
+app.patch('/api/tags/:id',auth,(req,res)=>{
+ const id=parseId(req.params.id);const row=id&&db.prepare('SELECT space_id AS spaceId FROM tags WHERE id=?').get(id);const name=z.string().trim().min(1).max(40).safeParse(req.body?.name);
+ if(!row)return fail(res,'Tag não encontrada.',404);if(!name.success)return fail(res,'Nome da tag inválido.');if(!canAccessSpace(row.spaceId,req.user.id,true))return fail(res,'Sem permissão.',403);
+ try { db.prepare('UPDATE tags SET name=? WHERE id=?').run(name.data,id); } catch { return fail(res,'Já existe uma tag com esse nome neste espaço.',409); }
+ res.json(db.prepare('SELECT id,space_id AS spaceId,name FROM tags WHERE id=?').get(id));
+});
+app.delete('/api/tags/:id',auth,(req,res)=>{
+ const id=parseId(req.params.id);const row=id&&db.prepare('SELECT space_id AS spaceId FROM tags WHERE id=?').get(id);if(!row)return fail(res,'Tag não encontrada.',404);if(!canAccessSpace(row.spaceId,req.user.id,true))return fail(res,'Sem permissão.',403);
+ const linked=db.prepare('SELECT COUNT(*) AS total FROM item_tags WHERE tag_id=?').get(id).total;if(req.query.force!=='1')return res.status(409).json({error:`Esta exclusão remove a tag de ${linked} item(ns). Confirme para continuar.`,impact:{linked}});
+ db.prepare('DELETE FROM tags WHERE id=?').run(id);res.json({ok:true});
+});
 app.get('/api/fields', auth, (req, res) => {
  const sid = parseId(req.query.spaceId); if (!sid || !canAccessSpace(sid,req.user.id)) return fail(res, 'Espaço não encontrado.', 404);
  res.json(db.prepare('SELECT id,space_id AS spaceId,name,type,options FROM custom_fields WHERE space_id=? ORDER BY position,id').all(sid).map(x => ({ ...x, options: JSON.parse(x.options) })));
@@ -223,6 +272,19 @@ app.post('/api/fields', auth, (req, res) => {
  if (!canAccessSpace(sid,req.user.id,true)) return fail(res, 'Sem permissão.', 403);
  const r = db.prepare('INSERT INTO custom_fields(space_id,name,type,options) VALUES(?,?,?,?)').run(sid, s.data.name, s.data.type, JSON.stringify(s.data.options || []));
  res.status(201).json({ id: Number(r.lastInsertRowid), spaceId: sid, ...s.data, options: s.data.options || [] });
+});
+app.patch('/api/fields/:id',auth,(req,res)=>{
+ const id=parseId(req.params.id);const row=id&&db.prepare('SELECT space_id AS spaceId FROM custom_fields WHERE id=?').get(id);if(!row)return fail(res,'Campo não encontrado.',404);if(!canAccessSpace(row.spaceId,req.user.id,true))return fail(res,'Sem permissão.',403);
+ const input=z.object({name:z.string().trim().min(1).max(50).optional(),type:z.enum(['text','number','date','currency','select','boolean']).optional(),options:z.array(z.string().trim().min(1).max(50)).max(30).optional()}).safeParse(req.body);if(!input.success)return fail(res,'Definição do campo inválida.');
+ const current=db.prepare('SELECT * FROM custom_fields WHERE id=?').get(id);const next={name:input.data.name??current.name,type:input.data.type??current.type,options:input.data.options??JSON.parse(current.options)};
+ db.prepare('UPDATE custom_fields SET name=?,type=?,options=? WHERE id=?').run(next.name,next.type,JSON.stringify(next.options),id);
+ res.json({id,spaceId:row.spaceId,...next});
+});
+app.delete('/api/fields/:id',auth,(req,res)=>{
+ const id=parseId(req.params.id);const row=id&&db.prepare('SELECT space_id AS spaceId FROM custom_fields WHERE id=?').get(id);if(!row)return fail(res,'Campo não encontrado.',404);if(!canAccessSpace(row.spaceId,req.user.id,true))return fail(res,'Sem permissão.',403);
+ const affected=db.prepare("SELECT COUNT(*) AS total FROM items WHERE space_id=? AND deleted_at IS NULL AND json_type(custom_values, '$.' || ?) IS NOT NULL").get(row.spaceId,String(id)).total;
+ if(req.query.force!=='1')return res.status(409).json({error:`Esta exclusão remove valores de ${affected} item(ns). Confirme para continuar.`,impact:{affected}});
+ const remove=db.transaction(()=>{for(const item of db.prepare('SELECT id,custom_values FROM items WHERE space_id=?').all(row.spaceId)){const values=JSON.parse(item.custom_values);delete values[String(id)];db.prepare('UPDATE items SET custom_values=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(JSON.stringify(values),item.id);}db.prepare('DELETE FROM custom_fields WHERE id=?').run(id);});remove();res.json({ok:true});
 });
 
 function isSpaceOwner(spaceId,userId) {
@@ -244,6 +306,15 @@ function getItem(id, includeDeleted = false) {
    tags: db.prepare('SELECT t.id,t.name FROM item_tags it JOIN tags t ON t.id=it.tag_id WHERE it.item_id=? ORDER BY t.name').all(id),
    location: item.location_id ? db.prepare('SELECT id,name,parent_id AS parentId,icon FROM locations WHERE id=?').get(item.location_id) : null,
    imageUrl: item.image_id ? `/api/items/${id}/image?v=${item.image_id}` : null, thumbnailUrl: item.image_id ? `/api/items/${id}/thumbnail?v=${item.image_id}` : null };
+}
+function getItemPage(rows) {
+ if(!rows.length)return [];
+ const ids=rows.map(row=>row.id);const marks=ids.map(()=>'?').join(',');
+ const categories=db.prepare(`SELECT ic.item_id AS itemId,c.id,c.name,c.parent_id AS parentId,c.icon FROM item_categories ic JOIN categories c ON c.id=ic.category_id WHERE ic.item_id IN (${marks}) ORDER BY c.name`).all(...ids);
+ const tags=db.prepare(`SELECT it.item_id AS itemId,t.id,t.name FROM item_tags it JOIN tags t ON t.id=it.tag_id WHERE it.item_id IN (${marks}) ORDER BY t.name`).all(...ids);
+ const categoryMap=new Map(),tagMap=new Map();for(const entry of categories){const list=categoryMap.get(entry.itemId)||[];list.push({id:entry.id,name:entry.name,parentId:entry.parentId,icon:entry.icon});categoryMap.set(entry.itemId,list);}for(const entry of tags){const list=tagMap.get(entry.itemId)||[];list.push({id:entry.id,name:entry.name});tagMap.set(entry.itemId,list);}
+ const locationIds=[...new Set(rows.map(row=>row.location_id).filter(Boolean))];const locations=new Map();if(locationIds.length){const q=locationIds.map(()=>'?').join(',');for(const entry of db.prepare(`SELECT id,name,parent_id AS parentId,icon FROM locations WHERE id IN (${q})`).all(...locationIds))locations.set(entry.id,entry);}
+ return rows.map(item=>({id:item.id,spaceId:item.space_id,title:item.title,description:item.description,locationId:item.location_id,purchaseUrl:item.purchase_url,purchaseLabel:item.purchase_label,customValues:JSON.parse(item.custom_values),imageId:item.image_id,imageFormat:item.image_format,imageMode:item.image_mode,createdAt:item.created_at,updatedAt:item.updated_at,deletedAt:item.deleted_at,categories:categoryMap.get(item.id)||[],tags:tagMap.get(item.id)||[],location:item.location_id?locations.get(item.location_id)||null:null,imageUrl:item.image_id?`/api/items/${item.id}/image?v=${item.image_id}`:null,thumbnailUrl:item.image_id?`/api/items/${item.id}/thumbnail?v=${item.image_id}`:null}));
 }
 const itemSchema = z.object({ spaceId: z.number().int().positive(), title: z.string().trim().min(1).max(160), description: z.string().max(10000).optional(), clientId:z.string().max(100).optional(),
  categoryIds: z.array(z.number().int().positive()).max(100).optional(), tagIds: z.array(z.number().int().positive()).max(100).optional(), locationId: z.number().int().positive().nullable().optional(),
@@ -272,8 +343,19 @@ app.get('/api/items', auth, (req, res) => {
  else if (categoryId) { terms.push('EXISTS(SELECT 1 FROM item_categories ic WHERE ic.item_id=i.id AND ic.category_id=?)'); params.push(categoryId); }
  const tagId = parseId(req.query.tagId); if (tagId) { terms.push('EXISTS(SELECT 1 FROM item_tags it WHERE it.item_id=i.id AND it.tag_id=?)'); params.push(tagId); }
  const locationId = parseId(req.query.locationId); if (locationId) { terms.push('i.location_id=?'); params.push(locationId); }
- const rows = db.prepare(`SELECT i.id FROM items i WHERE ${terms.join(' AND ')} ORDER BY i.updated_at DESC LIMIT 500`).all(...params);
- res.json(rows.map(r => getItem(r.id)));
+ const limit=req.query.limit===undefined?500:Math.min(100,Math.max(12,Number(req.query.limit)||48));let cursor;
+ if(req.query.cursor){try{cursor=JSON.parse(Buffer.from(String(req.query.cursor),'base64url').toString('utf8'));}catch{return fail(res,'Cursor inválido.');}}
+ if(cursor?.updatedAt&&Number.isInteger(cursor.id)){terms.push('(i.updated_at < ? OR (i.updated_at = ? AND i.id < ?))');params.push(cursor.updatedAt,cursor.updatedAt,cursor.id);}
+ const rows=db.prepare(`SELECT i.* FROM items i WHERE ${terms.join(' AND ')} ORDER BY i.updated_at DESC,i.id DESC LIMIT ?`).all(...params,limit+1);
+ const hasMore=rows.length>limit;const visible=hasMore?rows.slice(0,limit):rows;const last=visible.at(-1);
+ const nextCursor=hasMore&&last?Buffer.from(JSON.stringify({updatedAt:last.updated_at,id:last.id})).toString('base64url'):null;
+ if(req.query.limit===undefined)return res.json(getItemPage(visible));
+ res.json({items:getItemPage(visible),nextCursor});
+});
+app.get('/api/items/:id',auth,(req,res)=>{
+ const item=getItem(req.params.id);if(!item)return fail(res,'Item não encontrado.',404);
+ if(!canAccessSpace(item.spaceId,req.user.id))return fail(res,'Item não encontrado.',404);
+ res.json(item);
 });
 app.post('/api/items', auth, (req, res) => {
  const parsed = itemSchema.safeParse(req.body); if (!parsed.success) return fail(res, parsed.error.issues[0]?.message || 'Dados do item inválidos.');
@@ -287,9 +369,10 @@ app.post('/api/items', auth, (req, res) => {
 app.patch('/api/items/:id', auth, (req, res) => {
  const existing = getItem(req.params.id); if (!existing) return fail(res, 'Item não encontrado.', 404);
  if (!canAccessSpace(existing.spaceId, req.user.id, true)) return fail(res, 'Sem permissão.', 403);
- const patch = z.object({ title: z.string().trim().min(1).max(160).optional(), description: z.string().max(10000).optional(), categoryIds: z.array(z.number().int().positive()).max(100).optional(), tagIds: z.array(z.number().int().positive()).max(100).optional(), locationId: z.number().int().positive().nullable().optional(), purchaseUrl: z.string().max(2048).optional().refine(v => !v || /^https?:\/\//i.test(v)), purchaseLabel: z.string().max(100).optional(), customValues: z.record(z.string(),z.unknown()).optional() }).safeParse(req.body);
+ const patch = z.object({ title: z.string().trim().min(1).max(160).optional(), description: z.string().max(10000).optional(), categoryIds: z.array(z.number().int().positive()).max(100).optional(), tagIds: z.array(z.number().int().positive()).max(100).optional(), locationId: z.number().int().positive().nullable().optional(), purchaseUrl: z.string().max(2048).optional().refine(v => !v || /^https?:\/\//i.test(v)), purchaseLabel: z.string().max(100).optional(), customValues: z.record(z.string(),z.unknown()).optional(), baseUpdatedAt:z.string().optional(), force:z.boolean().optional() }).safeParse(req.body);
  if (!patch.success) return fail(res, patch.error.issues[0]?.message || 'Dados inválidos.');
  const d = patch.data;
+ if(d.baseUpdatedAt&&d.baseUpdatedAt!==existing.updatedAt&&!d.force)return res.status(409).json({error:'Este item foi alterado por outra pessoa. Revise as versões antes de salvar.',current:existing});
  try { const save = db.transaction(() => { db.prepare(`UPDATE items SET title=?,description=?,location_id=?,purchase_url=?,purchase_label=?,custom_values=?,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(d.title ?? existing.title,d.description ?? existing.description,d.locationId === undefined ? existing.locationId : d.locationId,d.purchaseUrl ?? existing.purchaseUrl,d.purchaseLabel ?? existing.purchaseLabel,JSON.stringify(d.customValues ?? existing.customValues),req.user.id,existing.id); if (d.categoryIds || d.tagIds || d.locationId !== undefined || d.customValues) saveRelations(existing.id,existing.spaceId,{ categoryIds:d.categoryIds ?? existing.categories.map(x=>x.id),tagIds:d.tagIds ?? existing.tags.map(x=>x.id),locationId:d.locationId === undefined ? existing.locationId : d.locationId,customValues:d.customValues ?? existing.customValues }); }); save(); res.json(getItem(existing.id)); }
  catch(e) { fail(res,e.message); }
 });
@@ -310,7 +393,9 @@ app.post('/api/items/:id/restore', auth, (req,res) => {
 });
 
 async function normalized(buffer, high, inputMime) {
- if(high&&buffer.length<=MAX_IMAGE&&!['image/heic','image/heif'].includes(inputMime)) {
+ const metadata=await sharp(buffer,{limitInputPixels:40000000}).metadata();
+ const withinHighDimensions=(metadata.width||0)<=3200&&(metadata.height||0)<=3200&&((metadata.width||0)*(metadata.height||0)<=12000000);
+ if(high&&buffer.length<=MAX_IMAGE&&withinHighDimensions&&!['image/heic','image/heif'].includes(inputMime)) {
   const format=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif' })[inputMime];
   if(format)return {buffer,format};
  }

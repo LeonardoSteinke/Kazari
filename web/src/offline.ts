@@ -2,7 +2,7 @@ import { openDB, DBSchema } from 'idb';
 import { api, Item, json } from './api';
 import { observeApiBuild } from './version';
 
-type Operation = { id: string; userId: number; localId?: string; spaceId: number; kind: 'create'|'update'|'delete'|'restore'|'image'; payload?: any; blob?: Blob; filename?: string; mode?: string };
+type Operation = { id: string; userId: number; localId?: string; spaceId: number; kind: 'create'|'update'|'delete'|'restore'|'image'|'meta'; payload?: any; blob?: Blob; filename?: string; mode?: string; path?:string; method?:string };
 interface KazariDB extends DBSchema {
   snapshots: { key: string; value: { key: string; items: Item[]; at: string; meta?: Record<string, unknown> } };
   outbox: { key: string; value: Operation; indexes: { 'by-user': number } };
@@ -61,6 +61,7 @@ export async function syncQueue(userId:number) {
         if(!itemId || itemId.startsWith('local-')) { await db.delete('outbox',op.id); completed++; continue; }
         await api(`/api/items/${itemId}`,{method:'DELETE'});
       } else if(op.kind==='restore' && itemId) await api(`/api/items/${itemId}/restore`,{method:'POST'});
+      else if(op.kind==='meta'&&op.path&&op.method) await api(op.path,json(op.method,op.payload));
       await db.delete('outbox',op.id); completed++;
     } catch(e) { error=e instanceof Error?e.message:'Falha ao enviar uma alteração pendente.';break; }
   }
