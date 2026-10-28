@@ -14,7 +14,7 @@ categorias hierárquicas, tags, campos personalizados e localização física.
 - Itens com descrição, múltiplas categorias, tags, localização, favoritos e campos
   configuráveis. Os antigos campos de situação, compra, garantia e loja foram
   retirados da interface; valores legados permanecem preservados no banco.
-- Seletores de texto e ícones sobrepostos ao conteúdo, com 22 desenhos SVG.
+- Seletores de texto e ícones sobrepostos ao conteúdo, com 24 desenhos SVG.
   O catálogo compartilhado de nomes e chaves está em `server/icons.json`.
 - Busca por nome, descrição, tags e campos; filtros por categoria (com opção de
   incluir descendentes), tag e localização.

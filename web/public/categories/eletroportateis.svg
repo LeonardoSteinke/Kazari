@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Eletroportáteis</title>
+<path d="M28 24 H72 L66 60 H34 Z" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M42 14 H58" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M50 14 V24" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M37 42 H63" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M44 52 L50 56 L56 52" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="32" y="60" width="36" height="24" rx="4" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="50" cy="72" r="4" fill="#C8452D"/>
+</svg>

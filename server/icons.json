@@ -1,4 +1,5 @@
 {
   "banheiro":"Banheiro", "cozinha":"Cozinha", "decoracao":"Decoração", "eletros":"Eletrônicos", "escritorio":"Escritório", "louca":"Louças", "moveis":"Móveis", "quarto":"Quarto", "sala":"Sala", "utensilios":"Utensílios",
-  "livros":"Livros", "roupas":"Roupas", "calcados":"Calçados", "bolsas":"Bolsas", "ferramentas":"Ferramentas", "jardinagem":"Jardinagem", "brinquedos":"Brinquedos", "jogos":"Jogos", "musica":"Música", "fotografia":"Fotografia", "esportes":"Esportes", "colecionaveis":"Colecionáveis"
+  "livros":"Livros", "roupas":"Roupas", "calcados":"Calçados", "bolsas":"Bolsas", "ferramentas":"Ferramentas", "jardinagem":"Jardinagem", "brinquedos":"Brinquedos", "jogos":"Jogos", "musica":"Música", "fotografia":"Fotografia", "esportes":"Esportes", "colecionaveis":"Colecionáveis",
+  "eletroportateis":"Eletroportáteis", "luminaria":"Luminária"
 }

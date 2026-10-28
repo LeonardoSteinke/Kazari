@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img"><title>Luminária</title>
+<path d="M32 18 H68 L80 48 H20 Z" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M50 48 V82" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M34 84 H66" fill="none" stroke="#C8452D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M70 48 V62" fill="none" stroke="#2B2926" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="70" cy="68" r="5" fill="#C8452D"/>
+</svg>
