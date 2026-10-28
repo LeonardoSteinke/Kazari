@@ -7,7 +7,10 @@ categorias hierárquicas, tags, campos personalizados e localização física.
 
 - Contas isoladas; primeira conta com código master; novas contas por convite de
   uso único e validade de sete dias.
-- Vários espaços pessoais por conta, isolados das outras contas da instalação.
+- Vários espaços por conta, isolados por padrão e compartilhados somente por
+  convite explícito do proprietário.
+- Compartilhamento de espaço por nome de usuário com papéis de editor ou leitor;
+  somente o proprietário pode convidar/remover contas e renomear o espaço.
 - Itens com descrição, múltiplas categorias, tags, localização, campos
   configuráveis e link externo para compra.
 - Busca por nome, descrição, tags e campos; filtros por categoria (com opção de

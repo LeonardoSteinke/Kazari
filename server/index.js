@@ -87,15 +87,46 @@ app.post('/api/invites', auth, admin, (req, res) => {
 });
 app.get('/api/invites', auth, admin, (_req, res) => res.json(db.prepare("SELECT id,expires_at AS expiresAt,used_at AS usedAt FROM invites ORDER BY id DESC LIMIT 100").all()));
 
-app.get('/api/spaces', auth, (req, res) => res.json(db.prepare(`SELECT id,name,'owner' AS role,created_at AS createdAt FROM spaces WHERE owner_id=? ORDER BY name COLLATE NOCASE`).all(req.user.id)));
+app.get('/api/spaces', auth, (req, res) => res.json(db.prepare(`
+ SELECT * FROM (
+  SELECT id,name,'owner' AS role,created_at AS createdAt FROM spaces WHERE owner_id=?
+  UNION ALL
+  SELECT s.id,s.name,m.role,s.created_at AS createdAt FROM space_members m JOIN spaces s ON s.id=m.space_id WHERE m.user_id=?
+ ) ORDER BY name COLLATE NOCASE
+`).all(req.user.id,req.user.id)));
 app.post('/api/spaces', auth, (req, res) => {
  const name = z.string().trim().min(1).max(80).safeParse(req.body?.name); if (!name.success) return fail(res, 'Nome do espaço obrigatório (até 80 caracteres).');
  const r=db.prepare('INSERT INTO spaces(name,owner_id) VALUES(?,?)').run(name.data,req.user.id);
  res.status(201).json({ id:Number(r.lastInsertRowid), name:name.data, role:'owner' });
 });
-app.patch('/api/spaces/:id', auth, (req,res,next)=>canAccessSpace(Number(req.params.id),req.user.id)?next():fail(res,'Espaço não encontrado.',404), (req, res) => {
+app.patch('/api/spaces/:id', auth, (req,res,next)=>isSpaceOwner(Number(req.params.id),req.user.id)?next():fail(res,'Apenas o proprietário pode renomear este espaço.',403), (req, res) => {
  const name=z.string().trim().min(1).max(80).safeParse(req.body?.name);if(!name.success)return fail(res,'Nome do espaço inválido.');
  db.prepare('UPDATE spaces SET name=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(name.data,req.params.id);res.json({id:Number(req.params.id),name:name.data});
+});
+app.get('/api/spaces/:id/members',auth,(req,res)=>{
+ const sid=parseId(req.params.id);if(!sid||!isSpaceOwner(sid,req.user.id))return fail(res,'Apenas o proprietário pode gerenciar o acesso.',403);
+ const owner=db.prepare('SELECT id,username,\'owner\' AS role FROM users WHERE id=(SELECT owner_id FROM spaces WHERE id=?)').get(sid);
+ const members=db.prepare("SELECT u.id,u.username,m.role FROM space_members m JOIN users u ON u.id=m.user_id WHERE m.space_id=? ORDER BY u.username COLLATE NOCASE").all(sid);
+ res.json([owner,...members]);
+});
+app.post('/api/spaces/:id/members',auth,(req,res)=>{
+ const sid=parseId(req.params.id);if(!sid||!isSpaceOwner(sid,req.user.id))return fail(res,'Apenas o proprietário pode compartilhar este espaço.',403);
+ const input=z.object({username:z.string().trim().min(3).max(40),role:z.enum(['editor','reader'])}).safeParse(req.body);
+ if(!input.success)return fail(res,'Informe um usuário cadastrado e o nível de acesso.');
+ const target=db.prepare('SELECT id,username FROM users WHERE username=? COLLATE NOCASE').get(input.data.username);
+ if(!target)return fail(res,'Não encontrei essa conta. Ela precisa criar uma conta no Kazari primeiro.',404);
+ if(target.id===req.user.id)return fail(res,'Você já é o proprietário deste espaço.');
+ db.prepare(`INSERT INTO space_members(space_id,user_id,role,added_by) VALUES(?,?,?,?)
+  ON CONFLICT(space_id,user_id) DO UPDATE SET role=excluded.role,added_by=excluded.added_by`).run(sid,target.id,input.data.role,req.user.id);
+ res.status(201).json({id:target.id,username:target.username,role:input.data.role});
+});
+app.delete('/api/spaces/:id/members/:userId',auth,(req,res)=>{
+ const sid=parseId(req.params.id);const uid=parseId(req.params.userId);
+ if(!sid||!isSpaceOwner(sid,req.user.id))return fail(res,'Apenas o proprietário pode gerenciar o acesso.',403);
+ if(!uid)return fail(res,'Conta inválida.');
+ const removed=db.prepare('DELETE FROM space_members WHERE space_id=? AND user_id=?').run(sid,uid);
+ if(!removed.changes)return fail(res,'Essa conta não tem acesso compartilhado a este espaço.',404);
+ res.json({ok:true});
 });
 function treeRoutes(table, noun) {
  app.get(`/api/${noun}`, auth, (req, res) => {
@@ -142,8 +173,14 @@ app.post('/api/fields', auth, (req, res) => {
  res.status(201).json({ id: Number(r.lastInsertRowid), spaceId: sid, ...s.data, options: s.data.options || [] });
 });
 
+function isSpaceOwner(spaceId,userId) {
+ return !!db.prepare('SELECT 1 FROM spaces WHERE id=? AND owner_id=?').get(spaceId,userId);
+}
 function canAccessSpace(spaceId, userId, write = false) {
- return db.prepare('SELECT id FROM spaces WHERE id=? AND owner_id=?').get(spaceId,userId) || null;
+ if(isSpaceOwner(spaceId,userId))return {role:'owner'};
+ const member=db.prepare('SELECT role FROM space_members WHERE space_id=? AND user_id=?').get(spaceId,userId);
+ if(!member||(write&&member.role!=='editor'))return null;
+ return member;
 }
 function getItem(id, includeDeleted = false) {
  const item = db.prepare(`SELECT * FROM items WHERE id=? ${includeDeleted ? '' : 'AND deleted_at IS NULL'}`).get(id);

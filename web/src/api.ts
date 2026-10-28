@@ -2,6 +2,7 @@ import { observeApiBuild } from './version';
 
 export type User = { id: number; username: string; isAdmin: boolean };
 export type Space = { id: number; name: string; role: 'owner' | 'editor' | 'reader' };
+export type SpaceMember = { id: number; username: string; role: 'owner' | 'editor' | 'reader' };
 export type NodeRecord = { id: number; spaceId: number; parentId: number | null; name: string };
 export type Tag = { id: number; spaceId: number; name: string };
 export type CustomField = { id: number; spaceId: number; name: string; type: 'text'|'number'|'date'|'currency'|'select'|'boolean'; options: string[] };
