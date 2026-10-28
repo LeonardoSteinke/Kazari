@@ -222,9 +222,14 @@ h1, h2, p { margin-top: 0; }
 .trash-row p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 .trash-row .outline { min-height: 44px; padding: 7px 10px; font-size: 13px; }
 
-.modal-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; padding: env(safe-area-inset-top) 0 0; background: #2b292677; overscroll-behavior: contain; }
-.editor-modal { width: 100vw; max-width: none; max-height: calc(100dvh - env(safe-area-inset-top)); overflow: auto; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); border: 1px solid var(--line); border-right: 0; border-bottom: 0; border-left: 0; border-radius: 16px 16px 0 0; background: var(--washi); box-shadow: 0 -14px 50px #2b292633; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; animation: sheet-enter .24s cubic-bezier(.2,.75,.25,1) both; }
+.modal-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; padding: env(safe-area-inset-top) 0 0; background: #2b292677; overscroll-behavior: contain; animation: backdrop-enter .42s ease-out both; }
+.modal-backdrop.is-closing { pointer-events: none; animation: backdrop-exit .36s ease-in both; }
+.editor-modal { width: 100vw; max-width: none; max-height: min(82dvh, 760px); overflow: auto; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); border: 1px solid var(--line); border-right: 0; border-bottom: 0; border-left: 0; border-radius: 16px 16px 0 0; background: var(--washi); box-shadow: 0 -14px 50px #2b292633; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; animation: sheet-enter .46s cubic-bezier(.18,.76,.25,1) both; }
+@keyframes backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdrop-exit { from { opacity: 1; } to { opacity: 0; } }
 @keyframes sheet-enter { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheet-exit { from { transform: translateY(0); } to { transform: translateY(100%); } }
+.modal-backdrop.is-closing .editor-modal { animation: sheet-exit .36s cubic-bezier(.4,0,.7,.2) both; }
 .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .modal-head h2 { margin: 0; font-size: 23px; line-height: 1.25; }
 .icon-button { display: grid; width: 44px; min-width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; font-size: 22px; line-height: 1; }
@@ -380,8 +385,10 @@ h1, h2, p { margin-top: 0; }
   .mobile-fab { display: none; }
   .empty-state { padding: 56px 20px; }
   .modal-backdrop { display: block; padding: 0; }
-  .editor-modal { position: absolute; top: 50%; left: 50%; width: min(620px, calc(100vw - 48px)); max-height: calc(100dvh - 48px); padding: 22px 26px 24px; border: 1px solid var(--line); border-radius: 16px; transform: translate(-50%, -50%); animation: modal-enter .18s ease-out both; }
-  @keyframes modal-enter { from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
+  .editor-modal { position: absolute; top: 50%; left: 50%; width: min(620px, calc(100vw - 48px)); max-height: calc(100dvh - 48px); padding: 22px 26px 24px; border: 1px solid var(--line); border-radius: 16px; transform: translate(-50%, -50%); animation: modal-enter .38s cubic-bezier(.18,.76,.25,1) both; }
+  @keyframes modal-enter { from { opacity: 0; transform: translate(-50%, calc(-50% + 18px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
+  .modal-backdrop.is-closing .editor-modal { animation: modal-exit .32s ease-in both; }
+  @keyframes modal-exit { from { opacity: 1; transform: translate(-50%, -50%); } to { opacity: 0; transform: translate(-50%, calc(-50% + 16px)); } }
   .detail-modal { padding-bottom: 24px; }
   .detail-photo { max-height: min(55dvh, 560px); }
   .toast { right: auto; bottom: 24px; left: 50%; transform: translateX(-50%); }
