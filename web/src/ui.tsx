@@ -11,9 +11,10 @@ const errorMessage=(e:unknown)=>e instanceof Error?e.message:'Falha de rede ou o
 function nodeLabel(node:NodeRecord,rows:NodeRecord[]):string{const parent=rows.find(x=>x.id===node.parentId);return parent?`${nodeLabel(parent,rows)} / ${node.name}`:node.name;}
 
 function ImageThumb({item,onClick}:{item:Item;onClick?:()=>void}){
- const [source,setSource]=useState<string>('');
- useEffect(()=>{ let url=''; if(item.pendingImage) {url=URL.createObjectURL(item.pendingImage);setSource(url);} else if(item.offlineThumbnail instanceof Blob){url=URL.createObjectURL(item.offlineThumbnail);setSource(url);} else {setSource(item.thumbnailUrl||'');} return ()=>{if(url.startsWith('blob:'))URL.revokeObjectURL(url);}; },[item.pendingImage,item.offlineThumbnail,item.thumbnailUrl]);
- return <button type="button" className="image-frame" onClick={onClick} aria-label={`Abrir ${item.title}`}>{source?<img src={source} alt="" loading="lazy"/>:<span className="image-placeholder">物</span>}</button>;
+ const [source,setSource]=useState<string>('');const [failed,setFailed]=useState(false);
+ useEffect(()=>{ let url='';setFailed(false); if(item.pendingImage) {url=URL.createObjectURL(item.pendingImage);setSource(url);} else if(item.offlineThumbnail instanceof Blob){url=URL.createObjectURL(item.offlineThumbnail);setSource(url);} else {setSource(item.thumbnailUrl||'');} return ()=>{if(url.startsWith('blob:'))URL.revokeObjectURL(url);}; },[item.pendingImage,item.offlineThumbnail,item.thumbnailUrl]);
+ const onError=()=>{if(source===item.thumbnailUrl&&item.imageUrl){setSource(item.imageUrl);return;}setFailed(true);};
+ return <button type="button" className="image-frame" onClick={onClick} aria-label={`Abrir ${item.title}`}>{source&&!failed?<img src={source} alt="" loading="lazy" onError={onError}/>:<span className="image-placeholder">物</span>}</button>;
 }
 function ItemDetails({item,fields,onClose,onEdit,onShare}:{item:Item;fields:CustomField[];onClose:()=>void;onEdit:()=>void;onShare:()=>void}){
  const [source,setSource]=useState(item.imageUrl||item.thumbnailUrl||'');const [imageFailed,setImageFailed]=useState(false);

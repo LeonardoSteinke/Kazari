@@ -244,12 +244,26 @@ app.post('/api/items/:id/image', auth, upload.single('image'), async (req,res) =
 });
 async function removeMedia(id) { if(!id) return; await Promise.allSettled(['webp','jpg','png','avif'].map(format=>fs.unlink(path.join(DATA_DIR,'media',`${id}.${format}`))).concat([fs.unlink(path.join(DATA_DIR,'media',`${id}-thumb.webp`))])); }
 async function serveImage(req,res,thumb) {
- const item=getItem(req.params.id,true); if(!item) { console.warn('Image request references a missing item.'); return res.sendStatus(404); }
- if(!item.imageId) { console.warn('Image request references an item without an image.'); return res.sendStatus(404); }
- if(!canAccessSpace(item.spaceId,req.user.id)) { console.warn('Image request denied for private space.'); return res.sendStatus(404); }
- const format=thumb?'webp':item.imageFormat||'webp';const filename=path.join(DATA_DIR,'media',`${item.imageId}${thumb?'-thumb':`.${format}`}`);
- try { await fs.access(filename); } catch { console.warn(`Image file missing (${thumb?'thumbnail':'original'}).`); return res.sendStatus(404); }
- res.set('Cache-Control','private, max-age=86400, stale-while-revalidate=604800'); res.type(format==='jpg'?'image/jpeg':`image/${format}`); res.sendFile(filename,err=>{if(err&&!res.headersSent){console.warn(`Image delivery failed (${thumb?'thumbnail':'original'}).`);res.sendStatus(404);}});
+ const item=getItem(req.params.id,true); if(!item) { console.warn('Image request references a missing item.'); res.set('Cache-Control','no-store'); return res.sendStatus(404); }
+ if(!item.imageId) { console.warn('Image request references an item without an image.'); res.set('Cache-Control','no-store'); return res.sendStatus(404); }
+ if(!canAccessSpace(item.spaceId,req.user.id)) { console.warn('Image request denied for private space.'); res.set('Cache-Control','no-store'); return res.sendStatus(404); }
+ const format=item.imageFormat||'webp';
+ let filename=path.join(DATA_DIR,'media',`${item.imageId}${thumb?'-thumb.webp':`.${format}`}`);
+ try { await fs.access(filename); } catch {
+  if(!thumb) { console.warn('Image file missing (original).'); res.set('Cache-Control','no-store'); return res.sendStatus(404); }
+  const original=path.join(DATA_DIR,'media',`${item.imageId}.${format}`);
+  const temporary=`${filename}.${crypto.randomUUID()}.tmp`;
+  try {
+   const generated=await sharp(original,{limitInputPixels:40000000}).rotate().resize({width:480,height:480,fit:'inside',withoutEnlargement:true}).webp({quality:68,effort:4}).toBuffer();
+   await fs.writeFile(temporary,generated,{flag:'wx'});
+   await fs.rename(temporary,filename);
+  } catch(error) {
+   // Another request may have repaired the same thumbnail concurrently.
+   await fs.unlink(temporary).catch(()=>{});
+   try { await fs.access(filename); } catch { console.warn('Image file missing (thumbnail and original fallback).'); res.set('Cache-Control','no-store'); return res.sendStatus(404); }
+  }
+ }
+ res.set('Cache-Control','private, max-age=86400, stale-while-revalidate=604800'); res.type(thumb?'image/webp':format==='jpg'?'image/jpeg':`image/${format}`); res.sendFile(filename,err=>{if(err&&!res.headersSent){console.warn(`Image delivery failed (${thumb?'thumbnail':'original'}).`);res.set('Cache-Control','no-store');res.sendStatus(404);}});
 }
 app.get('/api/items/:id/image',auth,(req,res)=>serveImage(req,res,false));
 app.get('/api/items/:id/thumbnail',auth,(req,res)=>serveImage(req,res,true));
