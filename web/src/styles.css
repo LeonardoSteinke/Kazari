@@ -251,9 +251,16 @@ h1, h2, p { margin-top: 0; }
 .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .modal-head h2 { margin: 0; font-size: 23px; line-height: 1.25; }
 .icon-button { display: grid; width: 44px; min-width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; font-size: 22px; line-height: 1; }
-.item-form { display: grid; gap: 2px; }
+.item-form { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; min-width: 0; gap: 2px; }
+.item-form > *, .item-form fieldset > *, .item-form label { min-width: 0; max-width: 100%; }
+.item-form > label, .item-form fieldset > label { grid-template-columns: minmax(0, 1fr); }
+.item-form input:not([type='checkbox']):not([type='radio']), .item-form textarea { min-width: 0; max-width: 100%; }
+.item-form input[type='date'] { width: 100%; min-inline-size: 0; appearance: none; -webkit-appearance: none; }
+.item-form input[type='date']::-webkit-date-and-time-value { min-width: 0; text-align: left; }
+.editor-modal { overflow-x: hidden; }
+.choice-list, .check-choice, .quality-option, .photo-actions { min-width: 0; max-width: 100%; }
 .item-form fieldset { min-width: 0; margin: 2px 0; padding: 14px 0 6px; border: 0; border-top: 1px solid var(--line); }
-.item-form legend { padding: 0 8px 0 0; font-size: 14px; font-weight: 700; }
+.item-form legend { max-width: 100%; white-space: normal; overflow-wrap: anywhere; padding: 0 8px 0 0; font-size: 14px; font-weight: 700; }
 .optional { margin-left: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
 .choice-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .check-choice { display: flex !important; min-height: 44px; align-items: center !important; gap: 8px !important; margin: 0 !important; padding: 8px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); font-size: 13px !important; font-weight: 500 !important; line-height: 1.35; overflow-wrap: anywhere; }
