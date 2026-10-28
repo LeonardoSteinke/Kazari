@@ -44,7 +44,7 @@ function fail(res, message, status = 400) { return res.status(status).json({ err
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'kazari' }));
 app.post('/api/auth/register', rateLimit({ windowMs: 15 * 60 * 1000, limit: 10 }), async (req, res) => {
- const schema = z.object({ username: z.string().trim().min(3).max(40).regex(/^[\p{L}\p{N}_.-]+$/u), password: z.string().min(10).max(200), code: z.string().min(8).max(200) });
+ const schema = z.object({ username: z.string().trim().min(3).max(40).regex(/^[\p{L}\p{N}_.-]+$/u), password: z.string().min(10).max(200), code: z.string().trim().min(8).max(200) });
  const parsed = schema.safeParse(req.body); if (!parsed.success) return fail(res, 'Informe usuário, senha de ao menos 10 caracteres e código válido.');
  const { username, password, code } = parsed.data;
  const passwordHash=await bcrypt.hash(password,12);let user;
