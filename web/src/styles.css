@@ -158,7 +158,7 @@ h1, h2, p { margin-top: 0; }
 .page-heading h1 { margin: 0 0 4px; font-size: 28px; line-height: 1.25; }
 .page-heading .muted { max-width: 36ch; margin: 0; font-size: 14px; line-height: 1.5; }
 .catalog-heading-copy { min-width: 0; flex: 1; }
-.catalog-space-select { display: block; width: min(100%, 440px); min-height: 48px; padding: 4px 36px 4px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; font-family: 'Shippori Mincho', serif; font-size: clamp(25px, 7vw, 32px); font-weight: 600; line-height: 1.25; }
+.catalog-space-select { display: block; width: min(100%, 440px); min-height: 48px; font-family: 'Shippori Mincho', serif; font-weight: 600; line-height: 1.25; }
 .add-button { display: none; align-items: center; gap: 8px; }
 .add-button > span:first-child { font-size: 20px; line-height: 14px; }
 .mobile-fab { position: fixed; z-index: 9; right: max(18px, env(safe-area-inset-right)); bottom: calc(var(--bottom-nav-height) + 14px + env(safe-area-inset-bottom)); display: grid; width: 60px; height: 60px; place-items: center; padding: 0 0 4px; border: 0; border-radius: 50%; background: var(--shu); color: white; font-size: 34px; line-height: 1; box-shadow: 0 5px 18px #2b292633; }
@@ -175,8 +175,8 @@ h1, h2, p { margin-top: 0; }
 .item-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .item-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); transition: border-color .18s; }
 .item-card:hover { border-color: #b6a993; }
-.image-frame { display: grid; width: 100%; aspect-ratio: 4 / 3; place-items: center; overflow: hidden; padding: 0; border: 0; background: #eee8dc; }
-.image-frame img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.image-frame { position: relative; display: grid; width: 100%; aspect-ratio: 4 / 3; place-items: center; overflow: hidden; padding: 0; border: 0; background: #eee8dc; }
+.image-frame img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: center; }
 .image-placeholder { color: #c6b9a4; font-family: 'Shippori Mincho', serif; font-size: 40px; }
 .item-card-body { min-width: 0; padding: 12px; }
 .item-title { display: block; width: 100%; min-height: 44px; padding: 4px 0; border: 0; background: none; font-family: 'Shippori Mincho', serif; font-size: 16px; font-weight: 600; line-height: 1.35; text-align: left; overflow-wrap: anywhere; }
@@ -230,7 +230,8 @@ h1, h2, p { margin-top: 0; }
 .field-create { display: grid; gap: 8px; }
 .field-create button { min-height: 44px; }
 .field-list, .member-list { display: grid; gap: 4px; margin-top: 12px; }
-.field-list span, .member-list > div { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 2px; border-top: 1px solid #eee7da; font-size: 13px; }
+.field-list > div > span, .member-list > div { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 2px; font-size: 13px; }
+.member-list > div { border-top: 1px solid #eee7da; }
 .field-list small, .member-list small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
 .member-list > div > span { display: grid; gap: 3px; }
 .settings-grid .manage-card { min-width: 0; }
@@ -469,6 +470,7 @@ h1, h2, p { margin-top: 0; }
   .add-button { display: flex; }
   .empty-state > .outline { display: inline-flex; align-items: center; justify-content: center; }
   .item-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .item-grid.list-view { grid-template-columns: minmax(0, 1fr); }
   .image-frame { aspect-ratio: 3 / 2; }
   .item-card-body { padding: 14px; }
   .item-title { font-size: 19px; }
