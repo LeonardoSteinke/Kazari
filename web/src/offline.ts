@@ -23,7 +23,11 @@ export async function cachedSpaces(userId: number) { return (await (await dbProm
 export async function cacheMeta(userId:number,spaceId:number,meta:Record<string,unknown>) { const db=await dbPromise;const tx=db.transaction('snapshots','readwrite');const key=snapshotKey(userId,spaceId);const old=await tx.store.get(key);await tx.store.put({key,items:old?.items||[],at:new Date().toISOString(),meta});await tx.done; }
 export async function hasCachedSnapshot(userId:number,spaceId:number) { return !!(await (await dbPromise).get('snapshots',snapshotKey(userId,spaceId))); }
 export async function cachedMeta(userId:number,spaceId:number) { return (await (await dbPromise).get('snapshots',snapshotKey(userId,spaceId)))?.meta || null; }
-export async function cacheItems(userId:number,spaceId:number,items:Item[]) {
+const snapshotWrites = new Map<string,Promise<void>>();
+export function cacheItems(userId:number,spaceId:number,items:Item[]):Promise<void> {
+  const key=snapshotKey(userId,spaceId);const previous=snapshotWrites.get(key)||Promise.resolve();const write=previous.catch(()=>{}).then(()=>writeCachedItems(userId,spaceId,items));snapshotWrites.set(key,write);void write.finally(()=>{if(snapshotWrites.get(key)===write)snapshotWrites.delete(key);}).catch(()=>{});return write;
+}
+async function writeCachedItems(userId:number,spaceId:number,items:Item[]) {
   const db=await dbPromise; const key=snapshotKey(userId,spaceId); const old=await db.get('snapshots',key); const queue=(await db.getAllFromIndex('outbox','by-user',userId)).filter(op=>op.spaceId===spaceId);const removed=new Set(queue.filter(op=>op.kind==='delete').map(op=>String(op.localId)));const supplied=new Set(items.map(item=>String(item.id)));const pending=[...items.filter(item=>item.pending),...(old?.items||[]).filter(item=>item.pending&&!supplied.has(String(item.id)))].filter(item=>!removed.has(String(item.id)));const pendingIds=new Set(pending.map(item=>String(item.id)));const visible=[...pending,...items.filter(item=>!removed.has(String(item.id))&&!pendingIds.has(String(item.id)))].slice(0,Math.max(80,pending.length));
   for(const item of visible) if(item.thumbnailUrl && !item.pendingImage) {
     try { const response=await fetch(item.thumbnailUrl,{credentials:'include'}); observeApiBuild(response); if(response.ok) await db.put('thumbs',await response.blob(),`${userId}:${item.id}`); } catch {}

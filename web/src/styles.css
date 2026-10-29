@@ -560,7 +560,7 @@ h1, h2, p { margin-top: 0; }
 @media (max-width: 359px) { .list-view .skeleton-card .skeleton-image { width: 80px; min-height: 104px; } }
 @media (min-width: 761px) { .skeleton-card .skeleton-image { aspect-ratio: 3 / 2; } .list-view .skeleton-card .skeleton-image { width: 120px; min-height: 126px; aspect-ratio: auto; } }
 @media (prefers-reduced-motion: reduce) { .skeleton-line, .skeleton-image, .skeleton-trash-image { animation: none; } }
-.pull-indicator { position: fixed; z-index: 15; top: calc(68px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: var(--space-2) var(--space-4); border: 1px solid var(--line); border-radius: 99px; background: var(--surface); color: var(--muted); font-size: 13px; white-space: nowrap; box-shadow: 0 3px 12px #2b29261c; }
+.pull-indicator { position: fixed; z-index: 4; top: calc(68px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: var(--space-2) var(--space-4); border: 1px solid var(--line); border-radius: 99px; background: var(--surface); color: var(--muted); font-size: 13px; white-space: nowrap; box-shadow: 0 3px 12px #2b29261c; }
 .trash-delete { display: grid; width: 44px; min-width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid #d9b8ae; border-radius: 9px; background: transparent; color: #9e3526; }
 .trash-delete svg { width: 20px; height: 20px; }
 .trash-delete:hover { background: #f8e8e3; }
