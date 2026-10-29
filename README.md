@@ -39,8 +39,8 @@ categorias hierárquicas, campos personalizados e localização física.
   alterações em IndexedDB e fila idempotente para sincronização ao reconectar.
 - A versão do servidor acompanha cada resposta da API; uma versão diferente é
   confirmada antes de atualizar a interface. Há também verificação ao abrir,
-  voltar ao app e a cada 15 minutos. A atualização aguarda o fechamento de
-  telas abertas e o envio de alterações pendentes, preservando a fila offline.
+  voltar ao app e a cada 15 minutos. O usuário escolhe quando atualizar, após
+  o envio de alterações pendentes, preservando a fila offline.
 
 ## Stack
 
