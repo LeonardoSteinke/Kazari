@@ -575,3 +575,7 @@ h1, h2, p { margin-top: 0; }
 .detail-favorite { display: grid; width: 44px; min-width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: #a47811; font-family: sans-serif; font-size: 26px; line-height: 1; }
 .detail-favorite[aria-pressed='true'] { color: #c69213; background: #fff5d7; }
 .detail-favorite:disabled { opacity: .7; }
+.detail-photo-wrap { position: relative; margin-bottom: var(--space-4-5); }
+.detail-photo-wrap .detail-photo, .detail-photo-wrap .detail-photo-fallback { margin-bottom: 0; }
+.detail-photo-wrap .detail-favorite { position: absolute; top: var(--space-2); left: var(--space-2); border-color: transparent; background: #2b2926b8; color: #fff1bb; }
+.detail-photo-wrap .detail-favorite[aria-pressed='true'] { background: #2b2926b8; color: #ffd75a; }
