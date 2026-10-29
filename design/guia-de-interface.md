@@ -20,7 +20,7 @@ As variáveis centrais estão em `web/src/styles.css`:
 
 A escala de referência usa 2 px para detalhes e 4, 8, 12, 16, 20, 24, 32, 40 e 48 px para espaçamentos. Prefira as variáveis `--space-*` existentes a valores novos arbitrários. Áreas de toque de ações costumam ter pelo menos 44 px de altura. Os campos usam tipografia de 16 px, especialmente importante no celular.
 
-A área principal tem largura máxima de 1100 px. No celular, o catálogo usa duas colunas de cards, passando para uma abaixo de 360 px; no desktop usa três. A lista usa uma coluna, com imagem à esquerda. Categorias e locais aparecem como badges de borda fina, com ícone e texto. O favorito aparece no canto superior esquerdo da imagem, inclusive nos detalhes.
+A área principal tem largura máxima de 1100 px. No celular, o catálogo usa duas colunas de cards, passando para uma abaixo de 360 px; no desktop usa três. A lista usa uma coluna, com imagem à esquerda. Ícones de grade e lista selecionam a visualização, próximos aos filtros e à seleção de todos ou favoritos. Categorias e locais aparecem como badges de borda fina, com ícone e texto. O favorito aparece no canto superior esquerdo da imagem, inclusive nos detalhes.
 
 O cabeçalho fica no topo e a navegação principal fica fixa embaixo. Respeite as áreas seguras do aparelho e o espaço reservado ao menu inferior e ao botão de adicionar. Telas de organização e ajustes usam cartões de borda fina, com uma coluna no celular e duas em telas maiores.
 
