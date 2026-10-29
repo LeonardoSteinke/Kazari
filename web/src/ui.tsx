@@ -3,7 +3,7 @@ import { Select } from './Select';
 import iconLabels from '../../server/icons.json';
 import { api, ApiError, CustomField, Item, NodeRecord, Space, SpaceMember, Tag, User, json } from './api';
 import { cacheItems, cacheMeta, cacheSpaces, cacheUser, cachedItems, cachedMeta, cachedSpaces, cachedUser, enqueue, pendingCount, pendingOperations, resolveQueuedConflict, syncQueue } from './offline';
-import { applyPendingVersionUpdate, startVersionWatch } from './version';
+import { applyPendingVersionUpdate, hasPendingVersionUpdate, startVersionWatch } from './version';
 import { observeApiBuild } from './version';
 
 type Tab='catalog'|'trash'|'organize'|'settings';
@@ -122,7 +122,7 @@ function App(){
  useEffect(()=>{syncRef.current=sync;},[sync]);
  useEffect(()=>{if(!user)return;setLastSync(localStorage.getItem(`kazari:last-sync:${user.id}`)||'');const onOnline=()=>{void syncRef.current();};const onOffline=()=>setOffline(true);const resume=()=>{if(document.visibilityState==='visible'&&navigator.onLine)void syncRef.current();};window.addEventListener('online',onOnline);window.addEventListener('offline',onOffline);document.addEventListener('visibilitychange',resume);void pendingCount(user.id).then(setPending);const timer=window.setInterval(()=>{void pendingCount(user.id).then(count=>{setPending(count);if(count&&navigator.onLine&&document.visibilityState==='visible')void syncRef.current();});},30000);if(navigator.onLine)void syncRef.current();return()=>{window.removeEventListener('online',onOnline);window.removeEventListener('offline',onOffline);document.removeEventListener('visibilitychange',resume);window.clearInterval(timer);};},[user?.id]);
  useEffect(()=>startVersionWatch(),[]);
- useEffect(()=>{const ready=()=>{setUpdateReady(true);notify('Uma atualização está pronta. Ela será aplicada assim que você concluir esta tela.');};window.addEventListener('kazari:update-ready',ready);return()=>window.removeEventListener('kazari:update-ready',ready);},[]);
+ useEffect(()=>{const ready=()=>setUpdateReady(true);const cancelled=()=>setUpdateReady(false);window.addEventListener('kazari:update-ready',ready);window.addEventListener('kazari:update-cancelled',cancelled);if(hasPendingVersionUpdate())ready();return()=>{window.removeEventListener('kazari:update-ready',ready);window.removeEventListener('kazari:update-cancelled',cancelled);};},[]);
  useEffect(()=>{if(!updateReady||editing!==false||viewing||filtersOpen||conflict||sharing||pending)return;const timer=window.setTimeout(()=>void applyPendingVersionUpdate(),700);return()=>window.clearTimeout(timer);},[updateReady,editing,viewing,filtersOpen,conflict,sharing,pending]);
  useEffect(()=>{const itemParam=new URLSearchParams(location.search).get('item');if(!itemParam||!spaceId)return;const found=items.find(x=>String(x.id)===itemParam);if(found){setViewing(found);history.replaceState(null,'',location.pathname);return;}let active=true;api<Item>(`/api/items/${itemParam}`).then(item=>{if(active&&item.spaceId===spaceId){setViewing(item);history.replaceState(null,'',location.pathname);}}).catch(()=>{});return()=>{active=false;};},[items,spaceId]);
 
