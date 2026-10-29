@@ -17,10 +17,11 @@ const dbPromise = openDB<KazariDB>('kazari-local-v1', 1, { upgrade(db) {
 let operationSequence=0;
 const snapshotKey = (userId: number, spaceId: number) => `${userId}:${spaceId}`;
 export async function cacheUser(user: KazariDB['users']['value'] | null) { const db=await dbPromise; if(user) await db.put('users',user,user.id); }
-export async function cachedUser(userId?: number) { if(!userId) return null; return (await dbPromise).get('users',userId) || null; }
+export async function cachedUser(userId?: number) { if(!userId) return null; return (await (await dbPromise).get('users',userId)) || null; }
 export async function cacheSpaces(userId: number, spaces: KazariDB['spaces']['value']) { await (await dbPromise).put('spaces',spaces,userId); }
-export async function cachedSpaces(userId: number) { return (await dbPromise).get('spaces',userId) || []; }
+export async function cachedSpaces(userId: number) { return (await (await dbPromise).get('spaces',userId)) || []; }
 export async function cacheMeta(userId:number,spaceId:number,meta:Record<string,unknown>) { const db=await dbPromise;const tx=db.transaction('snapshots','readwrite');const key=snapshotKey(userId,spaceId);const old=await tx.store.get(key);await tx.store.put({key,items:old?.items||[],at:new Date().toISOString(),meta});await tx.done; }
+export async function hasCachedSnapshot(userId:number,spaceId:number) { return !!(await (await dbPromise).get('snapshots',snapshotKey(userId,spaceId))); }
 export async function cachedMeta(userId:number,spaceId:number) { return (await (await dbPromise).get('snapshots',snapshotKey(userId,spaceId)))?.meta || null; }
 export async function cacheItems(userId:number,spaceId:number,items:Item[]) {
   const db=await dbPromise; const key=snapshotKey(userId,spaceId); const old=await db.get('snapshots',key); const queue=(await db.getAllFromIndex('outbox','by-user',userId)).filter(op=>op.spaceId===spaceId);const removed=new Set(queue.filter(op=>op.kind==='delete').map(op=>String(op.localId)));const supplied=new Set(items.map(item=>String(item.id)));const pending=[...items.filter(item=>item.pending),...(old?.items||[]).filter(item=>item.pending&&!supplied.has(String(item.id)))].filter(item=>!removed.has(String(item.id)));const pendingIds=new Set(pending.map(item=>String(item.id)));const visible=[...pending,...items.filter(item=>!removed.has(String(item.id))&&!pendingIds.has(String(item.id)))].slice(0,Math.max(80,pending.length));
