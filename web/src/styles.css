@@ -571,3 +571,7 @@ h1, h2, p { margin-top: 0; }
 .trash-delete { display: grid; width: 44px; min-width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid #d9b8ae; border-radius: 9px; background: transparent; color: #9e3526; }
 .trash-delete svg { width: 20px; height: 20px; }
 .trash-delete:hover { background: #f8e8e3; }
+.detail-heading-actions { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); }
+.detail-favorite { display: grid; width: 44px; min-width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: #a47811; font-family: sans-serif; font-size: 26px; line-height: 1; }
+.detail-favorite[aria-pressed='true'] { color: #c69213; background: #fff5d7; }
+.detail-favorite:disabled { opacity: .7; }
