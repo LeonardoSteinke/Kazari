@@ -190,7 +190,7 @@ h1, h2, p { margin-top: 0; }
 .image-placeholder { color: #c6b9a4; font-family: 'Shippori Mincho', serif; font-size: 40px; }
 .item-card-body { min-width: 0; padding: var(--space-3); }
 .item-title { display: block; width: 100%; min-height: 44px; padding: var(--space-1) 0; border: 0; background: none; font-family: 'Shippori Mincho', serif; font-size: 16px; font-weight: 600; line-height: 1.35; text-align: left; overflow-wrap: anywhere; }
-.favorite-star { display: inline-block; margin-left: var(--space-1); color: #d6a72c; font-family: sans-serif; font-size: 14px; }
+.favorite-star { position: absolute; right: var(--space-2); bottom: var(--space-2); display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #2b2926b8; color: #ffd75a; font-family: sans-serif; font-size: 19px; line-height: 1; }
 .item-description { display: -webkit-box; min-height: 40px; overflow: hidden; margin: var(--space-1) 0 var(--space-3); color: var(--muted); font-size: 14px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .item-meta, .tag-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-2) 0; }
 .item-meta:empty { display: none; }
