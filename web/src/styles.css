@@ -71,7 +71,8 @@ img, svg { max-width: 100%; }
 .select-value .icon-option-label { display: block; height: auto; text-align: left; }
 .icon-picker .select-trigger { padding-right: var(--space-4); }
 .tree-list .icon-picker .select-trigger { padding-right: var(--space-4); }
-.tree-add > .kazari-select { grid-column: 1 / -1; grid-row: 2; }
+.tree-add > .tree-parent-select { grid-column: 1 / -1; grid-row: 2; }
+.tree-add > .icon-picker { grid-column: 1 / -1; grid-row: 3; }
 .catalog-space-select.kazari-select { font-family: 'Shippori Mincho', serif; }
 .catalog-space-select .select-trigger { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; font-family: inherit; font-size: 25px; }
 
@@ -529,7 +530,8 @@ h1, h2, p { margin-top: 0; }
   .manage-card { padding: var(--space-4-5); }
   .tree-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; }
   .tree-add input { grid-column: 1; grid-row: 1; }
-  .tree-add select { grid-column: 2; grid-row: 1; }
+  .tree-add > .tree-parent-select { grid-column: 2; grid-row: 1; }
+  .tree-add > .icon-picker { grid-column: 1 / -1; grid-row: 2; }
   .tree-add .outline { grid-column: 3; grid-row: 1; }
   .share-space-form { grid-template-columns: minmax(0, 1fr) minmax(150px, .55fr) auto; gap: var(--space-2); }
   .share-space-form .primary { min-height: 46px; }

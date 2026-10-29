@@ -38,7 +38,7 @@ Ao alterar uma tela, conferir pelo menos larguras de 320, 390, 768 e 1280 px, al
 
 ## Pontos identificados na revisão de 28/10/2026
 
-- Em Organizar, os seletores de nível pai e ícone do formulário de criação ocupam a mesma posição de grade. O seletor de nível pai fica encoberto. No desktop, o campo de nome fica estreito e sobra um espaço vazio na mesma linha.
+- Em Organizar, os seletores de nível pai e ícone ficavam sobrepostos. Corrigido: cada seletor tem sua posição, e a edição impede selecionar um descendente como pai.
 - No catálogo em aproximadamente 390 px, o seletor de ordenação corta o texto de opções como “Atualização recente”. Em 320 px, o placeholder do nome do novo espaço também fica cortado ao lado do botão Criar.
 - Os rótulos e as áreas internas dos cartões usam regras que variam entre telas e estados; é necessário validar casos de texto longo e os alinhamentos antes de consolidar uma regra única.
 
