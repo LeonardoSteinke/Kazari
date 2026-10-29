@@ -15,3 +15,11 @@ Use one emoji after the colon, according to the type:
 - `build`: 📦
 - `ci`: 👷
 - `chore`: 🔧
+
+# Interface e testes responsivos
+
+O Kazari é mobile-first: priorize o uso no celular ao projetar ou alterar a
+interface. Consulte `design/guia-de-interface.md` e verifique as mudanças em
+vários tamanhos de tela, incluindo 320, 390, 768 e 1280 px, quando aplicável.
+Confira texto longo, alvos de toque, rolagem, diálogos e áreas seguras. Informe
+explicitamente quando a verificação em iPhone/Safari físico não for possível.
