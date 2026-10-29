@@ -369,7 +369,7 @@ function saveRelations(itemId, spaceId, data) {
 app.get('/api/items', auth, (req, res) => {
  const sid = parseId(req.query.spaceId); if (!sid || !canAccessSpace(sid, req.user.id)) return fail(res, 'Espaço não encontrado.', 404);
  const terms = ['i.space_id=?','i.deleted_at IS NULL']; const params = [sid]; const q = String(req.query.q || '').trim();
- if (q) { terms.push(`(i.title LIKE ? ESCAPE '\\' OR i.description LIKE ? ESCAPE '\\' OR i.custom_values LIKE ? ESCAPE '\\' OR EXISTS(SELECT 1 FROM item_tags it JOIN tags t ON t.id=it.tag_id WHERE it.item_id=i.id AND t.name LIKE ?))`); const needle = `%${q.replace(/[\\%_]/g, '\\$&')}%`; params.push(needle,needle,needle,needle); }
+ if (q) { terms.push(`(i.title LIKE ? ESCAPE '\\' OR i.description LIKE ? ESCAPE '\\' OR i.custom_values LIKE ? ESCAPE '\\')`); const needle = `%${q.replace(/[\\%_]/g, '\\$&')}%`; params.push(needle,needle,needle); }
  const categoryId = parseId(req.query.categoryId); if (categoryId && req.query.includeChildren === '1') { terms.push(`EXISTS(SELECT 1 FROM item_categories ic WHERE ic.item_id=i.id AND ic.category_id IN (WITH RECURSIVE descendants(id) AS (SELECT id FROM categories WHERE id=? AND space_id=? UNION ALL SELECT c.id FROM categories c JOIN descendants d ON c.parent_id=d.id WHERE c.space_id=?) SELECT id FROM descendants))`); params.push(categoryId,sid,sid); }
  else if (categoryId) { terms.push('EXISTS(SELECT 1 FROM item_categories ic WHERE ic.item_id=i.id AND ic.category_id=?)'); params.push(categoryId); }
  const tagId = parseId(req.query.tagId); if (tagId) { terms.push('EXISTS(SELECT 1 FROM item_tags it WHERE it.item_id=i.id AND it.tag_id=?)'); params.push(tagId); }
