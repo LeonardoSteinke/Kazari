@@ -27,7 +27,7 @@ O cabeçalho fica no topo e a navegação principal fica fixa embaixo. Respeite 
 ## Componentes e estados
 
 - Ações principais usam fundo vermelho; ações secundárias usam contorno; ações discretas usam botão de texto. Ações destrutivas têm destaque vermelho e confirmação quando necessário.
-- Campos têm fundo claro, borda fina e cantos arredondados. O seletor personalizado está em `web/src/Select.tsx`; deve continuar utilizável com teclado e acomodar opções longas.
+- Campos têm fundo claro, borda fina e cantos arredondados. O seletor personalizado está em `web/src/Select.tsx`; sua seta mantém 16 px de espaçamento interno à direita. Ele deve continuar utilizável com teclado e acomodar opções longas.
 - Em celular, diálogos aparecem como painéis na parte inferior; em desktop, ficam centralizados. Devem permitir rolagem interna e manter ações e fechamento acessíveis.
 - Carregamentos iniciais usam skeletons na forma aproximada do conteúdo. Conteúdo armazenado pode aparecer enquanto a atualização ocorre em segundo plano. Respeite a preferência por movimento reduzido.
 - Estados vazios, erros, conteúdo offline e dados pendentes precisam continuar distinguíveis; não apresentar erro de carregamento como lista vazia.
