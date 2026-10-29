@@ -456,6 +456,13 @@ app.post('/api/items/:id/restore', auth, (req,res) => {
  if(!canAccessSpace(item.spaceId,req.user.id,true)) return fail(res,'Sem permissão.',403);
  db.prepare('UPDATE items SET deleted_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(item.id); res.json(getItem(item.id));
 });
+app.delete('/api/trash/:id', auth, asyncHandler(async (req,res) => {
+ const item=getItem(req.params.id,true); if(!item||!item.deletedAt) return fail(res,'Item não está na lixeira.',404);
+ if(!canAccessSpace(item.spaceId,req.user.id,true)) return fail(res,'Sem permissão.',403);
+ const removed=db.prepare('DELETE FROM items WHERE id=? AND deleted_at IS NOT NULL').run(item.id);
+ if(!removed.changes) return fail(res,'Item não está na lixeira.',404);
+ await removeMedia(item.imageId); res.json({ok:true});
+}));
 
 async function normalized(buffer, high, inputMime) {
  const metadata=await sharp(buffer,{limitInputPixels:40000000}).metadata();

@@ -294,6 +294,12 @@ h1, h2, p { margin-top: 0; }
 .trash-row strong { font-family: 'Shippori Mincho', serif; overflow-wrap: anywhere; }
 .trash-row p { margin: var(--space-1) 0 0; color: var(--muted); font-size: 12px; }
 .trash-row .outline { min-height: 44px; padding: var(--space-2) var(--space-3); font-size: 13px; }
+.trash-row > .trash-actions { display: flex; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.trash-actions .text-button { font-size: 13px; }
+@media (max-width: 600px) {
+  .trash-row { flex-wrap: wrap; }
+  .trash-row > .trash-actions { flex: 1 0 100%; }
+}
 
 .modal-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; padding: env(safe-area-inset-top) 0 0; background: #2b292677; overscroll-behavior: contain; animation: backdrop-enter .42s ease-out both; }
 .modal-backdrop.is-closing { pointer-events: none; animation: backdrop-exit .36s ease-in both; }
@@ -488,7 +494,6 @@ h1, h2, p { margin-top: 0; }
   .page { padding-right: var(--space-4); padding-left: var(--space-4); }
   .item-card-body { padding: var(--space-3); }
   .trash-row { flex-wrap: wrap; }
-  .trash-row .outline { margin-left: auto; }
 }
 
 @media (min-width: 480px) and (max-width: 760px) {
