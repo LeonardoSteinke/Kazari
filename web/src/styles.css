@@ -248,6 +248,11 @@ h1, h2, p { margin-top: 0; }
 .member-list > div > span { display: grid; gap: var(--space-1); }
 .settings-grid .manage-card { min-width: 0; }
 .settings-grid .section-title p { max-width: 450px; }
+.settings-grid .manage-card > .section-title p { margin-bottom: 0; }
+.settings-grid .manage-card > * + * { margin-top: var(--space-4); }
+.settings-grid .manage-card > p:last-child { margin-bottom: 0; }
+.settings-grid .account-editor > .small-muted { margin-top: var(--space-3); }
+.settings-grid .manage-card > label:not([class]) { display: grid; gap: var(--space-2); }
 .setting-line { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: var(--space-3); margin: var(--space-4) 0 var(--space-1); font-size: 13px; }
 .setting-line input { width: 20px; min-height: 20px; }
 .share-space-form { display: grid; gap: var(--space-3); }

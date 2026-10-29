@@ -448,7 +448,7 @@ app.delete('/api/items/:id', auth, (req, res) => {
 });
 app.get('/api/trash', auth, (req,res) => {
  const sid=parseId(req.query.spaceId); if(!sid||!canAccessSpace(sid,req.user.id)) return fail(res,'Espaço não encontrado.',404);
- res.json(db.prepare("SELECT id FROM items WHERE space_id=? AND deleted_at IS NOT NULL AND julianday(deleted_at)>julianday('now','-7 days') ORDER BY deleted_at DESC").all(sid).map(x=>getItem(x.id,true)));
+ res.json(getItemPage(db.prepare("SELECT * FROM items WHERE space_id=? AND deleted_at IS NOT NULL AND julianday(deleted_at)>julianday('now','-7 days') ORDER BY deleted_at DESC").all(sid)));
 });
 app.post('/api/items/:id/restore', auth, (req,res) => {
  const item=getItem(req.params.id,true); if(!item||!item.deletedAt) return fail(res,'Item não está na lixeira.',404);
