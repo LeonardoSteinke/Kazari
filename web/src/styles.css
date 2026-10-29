@@ -63,12 +63,14 @@ img, svg { max-width: 100%; }
 .select-options.select-icon-grid button[aria-selected='true'] { border-color: var(--shu); }
 .icon-option-art { display: grid; width: 32px; height: 32px; place-items: center; flex: 0 0 32px; }
 .icon-option-art .category-symbol { width: 32px; height: 32px; }
-.icon-option-empty { color: var(--muted); font-size: 25px; line-height: 32px; }
+.icon-option-empty { display: block; width: 24px; height: 24px; color: var(--muted); }
 .icon-option-label { display: -webkit-box; width: 100%; height: 28px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .select-value .icon-option-art { width: 24px; height: 24px; flex-basis: 24px; overflow: visible; }
 .select-value .icon-option-art .category-symbol { display: block; width: 24px; height: 24px; }
-.select-value .icon-option-empty { line-height: 24px; font-size: 21px; }
+.select-value .icon-option-empty { width: 20px; height: 20px; }
 .select-value .icon-option-label { display: block; height: auto; text-align: left; }
+.icon-picker .select-trigger { padding-right: var(--space-4); }
+.tree-list .icon-picker .select-trigger { padding-right: var(--space-4); }
 .tree-add > .kazari-select { grid-column: 1 / -1; grid-row: 2; }
 .catalog-space-select.kazari-select { font-family: 'Shippori Mincho', serif; }
 .catalog-space-select .select-trigger { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; font-family: inherit; font-size: 25px; }
