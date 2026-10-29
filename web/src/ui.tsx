@@ -49,7 +49,7 @@ function AvatarCropper({file,onCancel,onConfirm}:{file:File;onCancel:()=>void;on
 }
 const categoryArt:Record<string,string>=Object.fromEntries(Object.keys(iconLabels).map(key=>[key,key]));
 function CategorySymbol({name,icon}:{name:string;icon?:string|null}){const key=name.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');const art=icon==='none'?null:icon||categoryArt[key]||Object.entries(categoryArt).find(([term])=>key.includes(term))?.[1];return art?<img className="category-symbol" src={`/categories/${art}.svg`} alt="" aria-hidden="true"/>:null;}
-const iconOptions=Object.keys(categoryArt);
+const iconOptions=(Object.keys(iconLabels) as (keyof typeof iconLabels)[]).sort((a,b)=>iconLabels[a].localeCompare(iconLabels[b],'pt-BR'));
 
 function Login({onLogin}:{onLogin:(u:User)=>void}){
  const [register,setRegister]=useState(false); const [username,setUsername]=useState(''); const [password,setPassword]=useState(''); const [confirmPassword,setConfirmPassword]=useState(''); const [code,setCode]=useState(''); const [error,setError]=useState(''); const [busy,setBusy]=useState(false);
