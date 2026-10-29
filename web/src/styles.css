@@ -168,8 +168,10 @@ h1, h2, p { margin-top: 0; }
 
 .search-box { display: flex; height: 52px; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
 .search-box > span { color: var(--muted); font-size: 22px; }
-.search-box input { min-width: 0; min-height: 48px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.search-box input:not([type="file"]) { min-width: 0; min-height: 48px; flex: 1; padding: 0; border: 0; background: transparent; box-shadow: none; }
 .search-box > button { width: 44px; min-width: 44px; padding: 0; border: 0; background: none; color: var(--muted); font-size: 22px; }
+.image-search-button svg { display: block; width: 21px; height: 21px; margin: auto; }
+.image-search-button:disabled { opacity: .4; }
 .filters { display: flex; gap: var(--space-2); overflow-x: auto; margin: 10px 0 var(--space-5); padding: 2px 2px 6px; scrollbar-width: none; overscroll-behavior-x: contain; }
 .filters::-webkit-scrollbar { display: none; }
 .filters select { width: auto; min-width: 140px; max-width: 240px; min-height: 44px; padding: 8px 30px 8px 12px; border-radius: 99px; background: transparent; font-size: 16px; }
@@ -183,6 +185,7 @@ h1, h2, p { margin-top: 0; }
 .image-placeholder { color: #c6b9a4; font-family: 'Shippori Mincho', serif; font-size: 40px; }
 .item-card-body { min-width: 0; padding: 12px; }
 .item-title { display: block; width: 100%; min-height: 44px; padding: 4px 0; border: 0; background: none; font-family: 'Shippori Mincho', serif; font-size: 16px; font-weight: 600; line-height: 1.35; text-align: left; overflow-wrap: anywhere; }
+.favorite-star { display: inline-block; margin-left: 5px; color: #d6a72c; font-family: sans-serif; font-size: 14px; }
 .item-description { display: -webkit-box; min-height: 40px; overflow: hidden; margin: 4px 0 10px; color: var(--muted); font-size: 14px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .item-meta, .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .item-meta span { display: inline-flex; min-height: 28px; align-items: center; gap: 4px; padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: 12px; }
@@ -191,8 +194,8 @@ h1, h2, p { margin-top: 0; }
 .check-choice .category-symbol { width: 20px; height: 20px; }
 .buy-link { display: inline-flex; min-height: 44px; align-items: center; color: #657244; font-size: 13px; overflow-wrap: anywhere; }
 .pending-label { display: block; margin-top: 4px; color: #9e5d36; font-size: 12px; }
-.card-actions { display: flex; justify-content: space-between; gap: 4px; margin-top: 8px; padding-top: 4px; border-top: 1px solid #e8e0d3; }
-.card-actions button { min-width: 0; min-height: 44px; flex: 1; padding: 6px 4px; border: 0; background: none; color: var(--muted); font-size: 12px; }
+.card-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; margin-top: 8px; padding-top: 4px; border-top: 1px solid #e8e0d3; }
+.card-actions button { min-width: 44px; min-height: 44px; flex: 1 0 max-content; padding: 6px 4px; border: 0; background: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .bottom-note { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 28px 0 8px; color: var(--muted); font-family: 'Shippori Mincho', serif; font-size: 13px; letter-spacing: .04em; text-align: center; }
 .bottom-note img { width: 24px; height: 24px; object-fit: contain; opacity: .72; }
 .offline-banner { margin: 0 0 18px; padding: 12px 14px; border-left: 3px solid var(--matcha); border-radius: 0 7px 7px 0; background: #eee5d3; color: #675e50; font-size: 13px; line-height: 1.5; }
@@ -346,9 +349,7 @@ h1, h2, p { margin-top: 0; }
 /* Mobile catalog controls: search stays visible; filters open as a roomy sheet. */
 .catalog-toolbar { display: grid; gap: 10px; margin-bottom: var(--space-5); }
 .inventory-filter { display: grid; gap: 5px; max-width: 280px; margin: 0 0 20px; color: var(--muted); font-size: 13px; }
-.image-search { margin-bottom: 16px; }
-.image-search-label { display: inline-flex; align-items: center; cursor: pointer; }
-.image-search-label input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; }
+.image-search { min-width: 0; }
 .image-search-results { display: flex; gap: 8px; overflow-x: auto; }
 .image-search-results button { display: grid; flex: 0 0 112px; gap: 4px; padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); text-align: left; font-size: 12px; }
 .image-search-results img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; }

@@ -1,15 +1,13 @@
 const CHECK_MS = 15 * 60 * 1000;
-const RELOAD_KEY = 'kazari:reloaded-at';
-const RELOAD_COOLDOWN_MS = 60 * 1000;
+const RELOAD_KEY = 'kazari:attempted-build';
 let reloadInProgress = false;
 let updateReady = false;
+let pendingBuild: string | null = null;
 
 async function forceReload(): Promise<void> {
   if (reloadInProgress) return;
-  const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
-  if (Date.now() - last < RELOAD_COOLDOWN_MS) return;
   reloadInProgress = true;
-  sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  if (pendingBuild) sessionStorage.setItem(RELOAD_KEY, pendingBuild);
 
   try {
     if ('caches' in window) {
@@ -27,9 +25,16 @@ async function forceReload(): Promise<void> {
 }
 
 async function compareBuild(build: string | null): Promise<void> {
-  if (import.meta.env.DEV || !build || build === 'dev' || build === __BUILD_ID__) return;
+  if (import.meta.env.DEV || !build || build === 'dev') return;
+  if (build === __BUILD_ID__) {
+    sessionStorage.removeItem(RELOAD_KEY);
+    return;
+  }
+  // A reload that still loaded this old shell must not repeat indefinitely.
+  if (sessionStorage.getItem(RELOAD_KEY) === build) return;
   if (updateReady) return;
   updateReady = true;
+  pendingBuild = build;
   window.dispatchEvent(new CustomEvent('kazari:update-ready'));
 }
 
