@@ -389,10 +389,11 @@ h1, h2, p { margin-top: 0; }
 .image-search-results button { display: grid; flex: 0 0 112px; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--line); border-radius: 8px; background: var(--surface); text-align: left; font-size: 12px; }
 .image-search-results img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; }
 .catalog-control-row { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: flex-start; gap: var(--space-2); }
-.filter-trigger { display: inline-flex; min-height: 50px; align-items: center; gap: var(--space-1); padding: var(--space-2); border: 1px solid var(--line); border-radius: 9px; background: var(--surface); font-size: 14px; }
+.filter-trigger { position: relative; display: inline-flex; min-height: 50px; align-items: center; gap: var(--space-1); padding: var(--space-2); border: 1px solid var(--line); border-radius: 9px; background: var(--surface); font-size: 14px; }
+.filter-trigger svg { width: 18px; height: 18px; flex: 0 0 18px; }
 .catalog-control-row .favorite-filter { flex: 1 1 92px; min-width: 92px; }
 .favorite-filter .select-trigger { min-height: 50px; gap: var(--space-1); padding: var(--space-2); font-size: 14px; }
-.filter-count { display: inline-grid; min-width: 22px; height: 22px; place-items: center; padding: 0 var(--space-1); border-radius: 50%; background: var(--shu); color: white; font-size: 12px; }
+.filter-count { position: absolute; top: -6px; right: -6px; display: inline-grid; min-width: 20px; height: 20px; place-items: center; padding: 0 var(--space-1); border-radius: 50%; background: var(--shu); color: white; font-size: 11px; }
 .view-switch { display: inline-flex; min-height: 44px; padding: var(--space-half); border: 1px solid var(--line); border-radius: 9px; background: #eee8dc; }
 .view-switch button { display: grid; width: 44px; min-width: 44px; min-height: 44px; place-items: center; padding: var(--space-2); border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
 .view-switch svg { width: 20px; height: 20px; }
