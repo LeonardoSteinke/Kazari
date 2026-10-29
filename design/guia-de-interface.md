@@ -39,7 +39,7 @@ Ao alterar uma tela, conferir pelo menos larguras de 320, 390, 768 e 1280 px, al
 ## Pontos identificados na revisão de 28/10/2026
 
 - Em Organizar, os seletores de nível pai e ícone ficavam sobrepostos. Corrigido: cada seletor tem sua posição, e a edição impede selecionar um descendente como pai.
-- No catálogo em aproximadamente 390 px, o seletor de ordenação corta o texto de opções como “Atualização recente”. Em 320 px, o placeholder do nome do novo espaço também fica cortado ao lado do botão Criar.
+- No catálogo em aproximadamente 390 px, o seletor de ordenação cortava o texto de opções como “Atualização recente”. Em 320 px, o placeholder do nome do novo espaço também ficava cortado ao lado do botão Criar. Corrigido com uma disposição adaptada às telas estreitas.
 - Os rótulos e as áreas internas dos cartões usam regras que variam entre telas e estados; é necessário validar casos de texto longo e os alinhamentos antes de consolidar uma regra única.
 
 A inspeção visual usou Chromium em uma instância isolada com dados de exemplo, nas quatro larguras acima. Não substitui a conferência em iPhone/Safari, nem cobre todos os tamanhos de texto, fotos, permissões e estados de erro ou offline.

@@ -20,7 +20,7 @@ categorias hierárquicas, campos personalizados e localização física.
 - Seletores de texto e ícones sobrepostos ao conteúdo, com 24 desenhos SVG.
   O catálogo compartilhado de nomes e chaves está em `server/icons.json`.
 - Busca por nome, descrição e campos; filtros por categoria (com opção de
-  incluir descendentes), tag e localização.
+  incluir descendentes), favoritos e localização.
 - Uma imagem por item. Modo otimizado converte para WebP e gera miniatura. Modo
   alta mantém o formato e os bytes enviados quando o arquivo já cabe no limite;
   acima de 10 MB ou para formatos de imagem incompatíveis, redimensiona e

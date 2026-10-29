@@ -377,6 +377,13 @@ h1, h2, p { margin-top: 0; }
 .catalog-toolbar { display: grid; gap: var(--space-3); margin-bottom: var(--space-5); }
 .catalog-selects { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: 0 0 var(--space-4-5); }
 .inventory-filter { display: grid; flex: 1 1 150px; gap: var(--space-1); max-width: 280px; color: var(--muted); font-size: 13px; }
+@media (max-width: 440px) {
+  .catalog-selects .inventory-filter { flex-basis: 100%; max-width: none; }
+}
+@media (max-width: 359px) {
+  .space-management .inline-form { flex-wrap: wrap; }
+  .space-management .inline-form input { flex: 1 0 100%; }
+}
 .image-search { min-width: 0; }
 .image-search-results { display: flex; gap: var(--space-2); overflow-x: auto; }
 .image-search-results button { display: grid; flex: 0 0 112px; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--line); border-radius: 8px; background: var(--surface); text-align: left; font-size: 12px; }
