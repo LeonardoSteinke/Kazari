@@ -378,10 +378,13 @@ app.get('/api/items', auth, (req, res) => {
  if(['guardado','emprestado','vendido','descartado'].includes(req.query.status)){terms.push("COALESCE(json_extract(i.inventory,'$.status'),'guardado')=?");params.push(req.query.status);}
  const limit=req.query.limit===undefined?500:Math.min(100,Math.max(12,Number(req.query.limit)||48));let cursor;
  if(req.query.cursor){try{cursor=JSON.parse(Buffer.from(String(req.query.cursor),'base64url').toString('utf8'));}catch{return fail(res,'Cursor inválido.');}}
- if(cursor?.updatedAt&&Number.isInteger(cursor.id)){terms.push('(i.updated_at < ? OR (i.updated_at = ? AND i.id < ?))');params.push(cursor.updatedAt,cursor.updatedAt,cursor.id);}
- const rows=db.prepare(`SELECT i.* FROM items i WHERE ${terms.join(' AND ')} ORDER BY i.updated_at DESC,i.id DESC LIMIT ?`).all(...params,limit+1);
+ const sorts={updated_desc:{column:'updated_at',direction:'DESC'},updated_asc:{column:'updated_at',direction:'ASC'},created_desc:{column:'created_at',direction:'DESC'},created_asc:{column:'created_at',direction:'ASC'},name_asc:{column:'title',direction:'ASC',collation:' COLLATE NOCASE'},name_desc:{column:'title',direction:'DESC',collation:' COLLATE NOCASE'}};
+ const sortName=String(req.query.sort||'updated_desc');if(!Object.hasOwn(sorts,sortName))return fail(res,'Ordenação inválida.');const sort=sorts[sortName];
+ const expression=`i.${sort.column}${sort.collation||''}`;const operator=sort.direction==='ASC'?'>':'<';
+ if(cursor){const value=cursor.value??(sortName==='updated_desc'?cursor.updatedAt:undefined);if((cursor.sort&&cursor.sort!==sortName)||typeof value!=='string'||!Number.isInteger(cursor.id)||cursor.id<1)return fail(res,'Cursor inválido.');terms.push(`(${expression} ${operator} ? OR (${expression} = ? AND i.id ${operator} ?))`);params.push(value,value,cursor.id);}
+ const rows=db.prepare(`SELECT i.* FROM items i WHERE ${terms.join(' AND ')} ORDER BY ${expression} ${sort.direction},i.id ${sort.direction} LIMIT ?`).all(...params,limit+1);
  const hasMore=rows.length>limit;const visible=hasMore?rows.slice(0,limit):rows;const last=visible.at(-1);
- const nextCursor=hasMore&&last?Buffer.from(JSON.stringify({updatedAt:last.updated_at,id:last.id})).toString('base64url'):null;
+ const nextCursor=hasMore&&last?Buffer.from(JSON.stringify({sort:sortName,value:last[sort.column],id:last.id})).toString('base64url'):null;
  if(req.query.limit===undefined)return res.json(getItemPage(visible));
  res.json({items:getItemPage(visible),nextCursor});
 });
