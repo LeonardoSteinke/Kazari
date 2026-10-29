@@ -196,8 +196,8 @@ h1, h2, p { margin-top: 0; }
 .item-meta:empty { display: none; }
 .item-meta span { display: inline-flex; min-height: 28px; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: 12px; }
 .tag-row span { color: #657244; font-size: 12px; }
-.category-symbol { width: 18px; height: 18px; object-fit: contain; }
-.check-choice .category-symbol { width: 20px; height: 20px; }
+.category-symbol { width: 20px; height: 20px; flex: 0 0 20px; object-fit: contain; }
+.check-choice .category-symbol { width: 22px; height: 22px; flex-basis: 22px; }
 .buy-link { display: inline-flex; min-height: 44px; align-items: center; color: #657244; font-size: 13px; overflow-wrap: anywhere; }
 .pending-label { display: block; margin-top: var(--space-1); color: #9e5d36; font-size: 12px; }
 .card-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1); margin-top: var(--space-4); padding-top: var(--space-2); border-top: 1px solid #e8e0d3; }
@@ -253,6 +253,13 @@ h1, h2, p { margin-top: 0; }
 .settings-grid .manage-card > p:last-child { margin-bottom: 0; }
 .settings-grid .account-editor > .small-muted { margin-top: var(--space-3); }
 .settings-grid .manage-card > label:not([class]) { display: grid; gap: var(--space-2); }
+.settings-grid .spaces-card { display: grid; align-content: start; gap: var(--space-4); }
+.settings-grid .spaces-card > * + * { margin-top: 0; }
+.space-management { display: grid; justify-items: start; gap: var(--space-2); }
+.space-management .text-button { padding: 0; text-align: left; }
+.space-management .small-muted, .space-sharing-preference .small-muted { margin: 0; }
+.space-sharing-preference { display: grid; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--line); }
+.space-sharing-preference .setting-line { min-height: 44px; margin: 0; cursor: pointer; }
 .setting-line { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: var(--space-3); margin: var(--space-4) 0 var(--space-1); font-size: 13px; }
 .setting-line input { width: 20px; min-height: 20px; }
 .share-space-form { display: grid; gap: var(--space-3); }
